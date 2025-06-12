@@ -1,0 +1,45 @@
+<!-- <h2>Login</h2>
+<form [formGroup]="loginForm" (ngSubmit)="submit()">
+  <input formControlName="email" placeholder="Email" />
+  <input type="password" formControlName="password" placeholder="Password" />
+  <button type="submit">Login</button>
+</form>
+
+<p *ngIf="error" style="color: red;">{{ error }}</p> -->
+
+
+<!-- src/app/auth/login/login.html -->
+
+<div class="login-container">
+    <mat-card>
+      <mat-card-title>Sign In</mat-card-title>
+      <form [formGroup]="loginForm" (ngSubmit)="submit()">
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" placeholder="you@example.com" />
+          <mat-error *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+            Please enter a valid email
+          </mat-error>
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" placeholder="••••••••" />
+          <mat-error *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            Password is required
+          </mat-error>
+        </mat-form-field>
+  
+        <button mat-raised-button color="primary" class="full-width" type="submit">
+          Login
+        </button>
+  
+        <div *ngIf="error" class="error-text">
+          {{ error }}
+        </div>
+  
+      </form>
+    </mat-card>
+  </div>
+  

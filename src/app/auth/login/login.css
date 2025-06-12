@@ -1,0 +1,23 @@
+/* src/app/auth/login/login.css */
+
+.login-container {
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 16px;
+  }
+  
+  mat-card {
+    padding: 24px;
+  }
+  
+  .full-width {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  
+  .error-text {
+    color: #d32f2f;
+    margin-top: 8px;
+    text-align: center;
+  }
+  
