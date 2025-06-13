@@ -1,45 +1,37 @@
-<!-- <h2>Login</h2>
-<form [formGroup]="loginForm" (ngSubmit)="submit()">
-  <input formControlName="email" placeholder="Email" />
-  <input type="password" formControlName="password" placeholder="Password" />
-  <button type="submit">Login</button>
-</form>
-
-<p *ngIf="error" style="color: red;">{{ error }}</p> -->
-
-
-<!-- src/app/auth/login/login.html -->
-
+<app-header></app-header>
 <div class="login-container">
-    <mat-card>
-      <mat-card-title>Sign In</mat-card-title>
-      <form [formGroup]="loginForm" (ngSubmit)="submit()">
-        
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" placeholder="you@example.com" />
-          <mat-error *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-            Please enter a valid email
-          </mat-error>
-        </mat-form-field>
-  
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" formControlName="password" placeholder="••••••••" />
-          <mat-error *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-            Password is required
-          </mat-error>
-        </mat-form-field>
-  
-        <button mat-raised-button color="primary" class="full-width" type="submit">
-          Login
-        </button>
-  
-        <div *ngIf="error" class="error-text">
-          {{ error }}
-        </div>
-  
-      </form>
-    </mat-card>
-  </div>
-  
+  <mat-card class="login-card">
+    <div class="branding">
+      <img src="/logo.png" alt="Logo" class="logo" />
+      <h1 class="app-title">Welcome Back</h1>
+      <p class="app-subtitle">Log in to continue</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="submit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
+        <input matInput formControlName="email" />
+        <mat-error *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+          Valid email is required
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input matInput type="password" formControlName="password" />
+        <mat-error *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+          Password is required
+        </mat-error>
+      </mat-form-field>
+
+      <div *ngIf="error" class="error-text">{{ error }}</div>
+
+      <button mat-raised-button color="primary" class="submit-button" type="submit">Login</button>
+    </form>
+
+    <mat-card-actions class="register-redirect">
+      <span>Don't have an account?</span>
+      <button mat-button color="primary" routerLink="/register">Register</button>
+    </mat-card-actions>
+  </mat-card>
+</div>
