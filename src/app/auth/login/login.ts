@@ -59,7 +59,7 @@ export class Login implements OnInit {
       next: (res) => {
         this.auth.saveToken(res.token); // Save JWT to localStorage
         this.snackBar.open('Login successful!', 'OK', { duration: 3000 });
-        this.router.navigate(['/']);
+        this.router.navigate(['/upload'], { replaceUrl: true });
       },
       error: (err) => {
         this.error = typeof err.error === 'string' ? err.error : 'Login failed. Please try again.';
