@@ -1,0 +1,10 @@
+<mat-card class="video-box">
+  <div class="video-header">
+    <h2 class="video-title" [innerHTML]="title">{{ title }}</h2>
+    <p class="video-description" [innerHTML]="description">{{ description }}</p>
+  </div>
+
+  <div class="video-tags" *ngIf="tags?.length">
+    <span class="tag" *ngFor="let tag of tags" [innerHTML]="tag">{{ tag }}</span>
+  </div>
+</mat-card>

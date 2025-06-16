@@ -62,13 +62,19 @@
     <!-- Title -->
     <mat-form-field class="full-width">
       <mat-label>Title</mat-label>
-      <input matInput formControlName="title" />
+      <input matInput formControlName="title" required />
+      <mat-error *ngIf="form.get('title')?.hasError('required') && form.get('title')?.touched">
+        Title is required
+      </mat-error>
     </mat-form-field>
 
     <!-- Description -->
     <mat-form-field class="full-width">
       <mat-label>Description</mat-label>
-      <textarea matInput formControlName="description"></textarea>
+      <textarea matInput formControlName="description" required></textarea>
+      <mat-error *ngIf="form.get('description')?.hasError('required') && form.get('description')?.touched">
+        Description is required
+      </mat-error>
     </mat-form-field>
 
     <!-- Suggested Tags -->
@@ -85,7 +91,7 @@
 
     <!-- Manual Tags -->
     <div class="tag-box">
-      <label>Manual Tags:</label>
+      <label>Enter Manual Tags (Own or Suggested):</label>
       <div *ngFor="let tagCtrl of manualTagsControls; let i = index" class="tag-input-row">
         <mat-form-field class="tag-field">
           <input matInput [formControl]="tagCtrl" placeholder="Enter tag" />
@@ -104,7 +110,7 @@
       <label>Select Category:</label>
       <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
         <!-- Leaf node -->
-        <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle>
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding>
           <li>
             <button mat-icon-button disabled></button>
             <mat-checkbox
@@ -117,7 +123,7 @@
         </mat-tree-node>
 
         <!-- Expandable node -->
-        <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodeToggle>
+        <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodeToggle matTreeNodePadding>
           <li>
             <button mat-icon-button matTreeNodeToggle>
               <mat-icon>

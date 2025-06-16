@@ -53,5 +53,7 @@
     margin-top: 0.5rem;
     color: #1976d2;
   }
-  
-  
+
+  mat-tree li {
+    list-style-type: none;
+  }

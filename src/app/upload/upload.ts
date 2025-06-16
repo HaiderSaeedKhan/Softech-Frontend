@@ -310,13 +310,18 @@ export class UploadComponent implements OnInit {
     const { title, description, manualTags } = this.form.value;
   
     // ✅ Basic validation
-    if (!title || !description || !this.selectedFile || !this.selectedCategoryId) {
-      alert('All fields including title, description, file, and category must be filled.');
+    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || this.manualTagsControls.length === 0) {
+      alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
       return;
     }
   
     // ✅ Filter non-empty manual tags and type them correctly
     const tags: string[] = (manualTags as string[]).filter((tag: string) => tag?.trim().length > 0);
+
+    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
+      alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
+      return; // 🔁 Prevent submission if any field is invalid
+    }
   
     // ✅ Create FormData for multipart/form-data submission
     const formData = new FormData();
@@ -333,10 +338,12 @@ export class UploadComponent implements OnInit {
     this.videoService.uploadVideo(formData).subscribe({
       next: () => {
         alert('Video uploaded successfully!');
+        window.location.reload();
         this.form.reset();
         this.selectedFile = null;
         this.selectedCategoryId = null;
         this.tags = [];
+        this.selectedFile = null;
       },
       error: (err) => {
         console.error('Upload failed:', err);

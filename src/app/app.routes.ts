@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./auth/login/login').then(m => m.Login) },
   { path: 'register', loadComponent: () => import('./auth/register/register').then(m => m.Register) },
   { path: 'upload', loadComponent: () => import('./upload/upload').then(m => m.UploadComponent) },
+  { path: 'search', loadComponent: () => import('./search/search/search').then(m => m.SearchComponent) },
   { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard').then(m => m.Dashboard) },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }

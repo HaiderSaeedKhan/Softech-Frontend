@@ -1,0 +1,40 @@
+<div class="search-bar-container">
+  <mat-form-field class="search-input" appearance="outline">
+    <mat-label>Search videos</mat-label>
+    <input
+      matInput
+      [formControl]="searchControl"
+      [matAutocomplete]="auto"
+      placeholder="Type to search..."
+    />
+    <button mat-icon-button matSuffix (click)="onSearch()">
+      <mat-icon>search</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <mat-autocomplete #auto="matAutocomplete">
+    <mat-option *ngFor="let suggestion of suggestions" [value]="suggestion">
+      {{ suggestion }}
+    </mat-option>
+  </mat-autocomplete>
+</div>
+
+<div class="results" *ngIf="results.length > 0">
+<h3>Search Results:</h3>
+
+<div class="results" *ngIf="results.length > 0">
+  <div class="video-grid">
+    <app-box-video
+      *ngFor="let video of results"
+      [title]="getFieldHighlight(video.id, 'title') || video.title"
+      [description]="getFieldHighlight(video.id, 'description') || video.description"
+      [tags]="getFieldHighlight(video.id, 'tags') ? [getFieldHighlight(video.id, 'tags')] : video.tags"
+    />
+  </div>
+</div>
+
+</div>
+
+<div *ngIf="results.length === 0 && searchControl.value?.trim()">
+  <p>No results found.</p>
+</div>

@@ -1,0 +1,13 @@
+<div *ngIf="videos.length === 0">
+    <p>You have not uploaded any videos yet.</p>
+  </div>
+  
+  <div *ngFor="let video of videos" class="my-video">
+    <mat-card>
+      <mat-card-title>{{ video.title }}</mat-card-title>
+      <mat-card-content>
+        <p>{{ video.description }}</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  
