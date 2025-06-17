@@ -1,4 +1,4 @@
-<div class="search-bar-container">
+<!-- <div class="search-bar-container">
   <mat-form-field class="search-input" appearance="outline">
     <mat-label>Search videos</mat-label>
     <input
@@ -37,4 +37,83 @@
 
 <div *ngIf="results.length === 0 && searchControl.value?.trim()">
   <p>No results found.</p>
+</div> -->
+<div class="explore-container">
+  <!-- Sidebar Tree -->
+  <div class="sidebar">
+    <h3>Categories</h3>
+    <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="category-tree">
+      <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+        <mat-checkbox
+          [checked]="isChecked(node.id)"
+          (change)="onCategoryChecked(node, $event.checked)">
+          {{ node.name }}
+        </mat-checkbox>
+      </mat-tree-node>
+    
+      <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding [style.padding-left.px]="node.level * 24">
+        <button mat-icon-button matTreeNodeToggle>
+          <mat-icon>
+            {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+          </mat-icon>
+        </button>
+        <mat-checkbox
+          [checked]="isChecked(node.id)"
+          (change)="onCategoryChecked(node, $event.checked)">
+          {{ node.name }}
+        </mat-checkbox>
+      </mat-tree-node>
+    </mat-tree>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="search-bar-container">
+      <mat-form-field class="search-input" appearance="outline">
+        <mat-label>Search videos</mat-label>
+        <input
+          matInput
+          [formControl]="searchControl"
+          [matAutocomplete]="auto"
+          placeholder="Type to search..."
+        />
+        <button mat-icon-button matSuffix (click)="onSearch()">
+          <mat-icon>search</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <mat-autocomplete #auto="matAutocomplete">
+        <mat-option *ngFor="let suggestion of suggestions" [value]="suggestion">
+          {{ suggestion }}
+        </mat-option>
+      </mat-autocomplete>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="results.length === 0 && !(searchControl.value?.trim() || selectedCategoryIds.size)" class="empty-state">
+      <p>Start by typing a search or selecting a category</p>
+    </div>
+
+    <!-- No Results -->
+    <div *ngIf="results.length === 0 && (searchControl.value?.trim() || selectedCategoryIds.size)" class="empty-state">
+      <p>No results found.</p>
+    </div>
+
+    <div class="results" *ngIf="results.length > 0">
+      <h3>Search Results:</h3>
+      <div class="video-grid">
+        <app-box-video
+          *ngFor="let video of results"
+          [title]="getFieldHighlight(video.id, 'title') || video.title"
+          [description]="getFieldHighlight(video.id, 'description') || video.description"
+          [tags]="getFieldHighlight(video.id, 'tags') ? [getFieldHighlight(video.id, 'tags')] : video.tags"
+          class="video-card"
+        />
+      </div>
+    </div>
+
+    <div *ngIf="results.length === 0 && searchControl.value?.trim()">
+      <p>No results found.</p>
+    </div>
+  </div>
 </div>

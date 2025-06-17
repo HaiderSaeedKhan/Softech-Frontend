@@ -1,4 +1,4 @@
-.search-bar-container {
+/* .search-bar-container {
     display: flex;
     justify-content: center;
     margin-top: 40px;
@@ -18,3 +18,131 @@
     padding: 0 24px;
   }
   
+
+  .explore-container {
+    display: flex;
+    padding: 16px;
+  }
+  
+  .sidebar {
+    width: 260px;
+    padding: 0 16px;
+    border-right: 1px solid #e0e0e0;
+  }
+  
+  .category-tree {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .main-content {
+    flex: 1;
+    padding: 0 24px;
+  }
+  
+  .search-bar-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+    margin-bottom: 24px;
+    padding: 0 16px;
+  }
+  
+  .search-input {
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 24px;
+  }
+   */
+
+
+   :root {
+    --primary-color: #1976d2;
+    --card-bg: #ffffff;
+    --card-shadow: rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+  }
+  
+  .explore-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f9f9f9;
+  }
+  
+  .sidebar {
+    width: 260px;
+    padding: 24px 16px;
+    background-color: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+  }
+  
+  .main-content {
+    flex: 1;
+    padding: 32px 48px;
+  }
+  
+  .search-bar-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+  
+  .search-input {
+    width: 100%;
+    max-width: 600px;
+    background-color: white;
+  }
+  
+  /* .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  } */
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    align-items: stretch;
+  }
+  
+  
+  /* Equal-height video boxes */
+  app-box-video {
+    display: block;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px var(--card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 16px;
+    height: 100%;
+  }
+  
+  app-box-video:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Tree Styling */
+  .category-tree {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  mat-checkbox {
+    font-size: 14px;
+  }
+  
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    margin-top: 48px;
+    color: #888;
+    font-size: 18px;
+  }

@@ -12,8 +12,9 @@ export class SearchService {
     return this.http.get<string[]>(`${this.apiUrl}/autocomplete?prefix=${prefix}`);
   }
 
-  fullTextSearch(query: string): Observable<{ hits: any[]; highlights: any }> {
-    return this.http.get<{ hits: any[]; highlights: any }>(`${this.apiUrl}?q=${query}`);
+  fullTextSearch(query: string, categoryIds: number[]): Observable<{ hits: any[]; highlights: any }> {
+    const body = { query, categoryIds };
+    return this.http.post<{ hits: any[]; highlights: any }>(`${this.apiUrl}/query`, body);
   }
   
   getMyVideos(): Observable<any[]> {

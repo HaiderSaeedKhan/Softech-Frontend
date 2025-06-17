@@ -1,4 +1,4 @@
-.video-box {
+/* .video-box {
   margin: 16px 0;
   padding: 16px;
   border-radius: 12px;
@@ -47,4 +47,71 @@
   font-style: normal;
   font-weight: bold;
   padding: 1px 4px;
+} */
+
+.video-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 210px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 20px;
+  background-color: #fff;
+  margin: 0;
+}
+
+.video-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.video-box-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.video-header {
+  margin-bottom: 16px;
+}
+
+.video-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 8px 0;
+}
+
+.video-description {
+  font-size: 15px;
+  color: #555;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.video-tags {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  background-color: #1976d2;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+::ng-deep em {
+  background-color: yellow;
+  font-style: normal;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
 }
