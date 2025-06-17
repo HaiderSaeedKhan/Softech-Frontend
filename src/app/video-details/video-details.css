@@ -1,0 +1,130 @@
+/* .container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #ccc;
+  }
+  
+  .card {
+    background: #e3f2fd;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+  }
+  
+  .card.previous {
+    background: #fff9c4;
+  }
+  
+  .edit-form {
+    background: #f1f8e9;
+    padding: 1rem;
+    border-radius: 6px;
+  }
+  
+  .edit-form input,
+  .edit-form textarea {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.8rem;
+    padding: 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+  
+  .edit-form button {
+    background: #1976d2;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+   */
+
+   .details-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+  
+  .page-title {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #1976d2;
+    text-align: center;
+  }
+  
+  .card {
+    background-color: #f1f9ff;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border-left: 5px solid #2196f3;
+  }
+  
+  .history-card {
+    background-color: #fffde7;
+    border-left-color: #fbc02d;
+  }
+  
+  .metadata-row {
+    margin: 0.4rem 0;
+  }
+  
+  .edit-section {
+    background-color: #e8f5e9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+    border-left: 5px solid #66bb6a;
+  }
+  
+  .edit-section form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .edit-section label {
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+  
+  .edit-section input,
+  .edit-section textarea {
+    padding: 0.6rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-top: 0.4rem;
+  }
+  
+  .edit-section button {
+    margin-top: 1.5rem;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .edit-section button:hover {
+    background-color: #125ca1;
+  }
+  
+  .not-owner-note {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #fbe9e7;
+    border-left: 5px solid #e64a19;
+    border-radius: 6px;
+    color: #444;
+  }

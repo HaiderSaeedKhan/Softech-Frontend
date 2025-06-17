@@ -13,4 +13,13 @@ export class VideoService {
       responseType: 'text' // ✅ Accept plain text or empty response
     });
   }
+
+  getVideoMetadata(id: number) {
+    return this.http.get<any>(`${this.baseUrl}/metadata/${id}`);
+  }
+  
+  updateVideo(id: number, data: any) {
+    return this.http.put(`${this.baseUrl}/${id}`, data);
+  }
+  
 }

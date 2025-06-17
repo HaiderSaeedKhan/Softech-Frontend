@@ -146,3 +146,12 @@
     color: #888;
     font-size: 18px;
   }
+
+  .video-card {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  
+  .video-card:hover {
+    transform: scale(1.02);
+  }

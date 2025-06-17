@@ -12,8 +12,8 @@ export class SearchService {
     return this.http.get<string[]>(`${this.apiUrl}/autocomplete?prefix=${prefix}`);
   }
 
-  fullTextSearch(query: string, categoryIds: number[]): Observable<{ hits: any[]; highlights: any }> {
-    const body = { query, categoryIds };
+  fullTextSearch(query: string, categoryIds: number[], onlyMyVideos: boolean): Observable<{ hits: any[]; highlights: any }> {
+    const body = { query, categoryIds, onlyMyVideos };
     return this.http.post<{ hits: any[]; highlights: any }>(`${this.apiUrl}/query`, body);
   }
   

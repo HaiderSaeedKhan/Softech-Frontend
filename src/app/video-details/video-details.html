@@ -1,0 +1,214 @@
+<!-- <app-header></app-header>
+
+<div class="container">
+  <div class="card current">
+    <h2>Current Metadata</h2>
+    <p><strong>Title:</strong> {{ current?.title }}</p>
+    <p><strong>Description:</strong> {{ current?.description }}</p>
+    <p><strong>Category:</strong> {{ current?.categoryName }}</p>
+    <p><strong>Tags:</strong> {{ current?.tags?.join(', ') }}</p>
+  </div>
+
+  <div class="card previous">
+    <h2>Previous Metadata</h2>
+    <pre>{{ previous | json }}</pre>
+  </div>
+
+  <div *ngIf="isOwner" class="edit-form">
+    <h2>Edit Metadata</h2>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <input formControlName="title" placeholder="Title" />
+      <textarea formControlName="description" placeholder="Description"></textarea>
+      <input formControlName="categoryId" placeholder="Category ID" />
+      <input formControlName="tags" placeholder="Comma-separated tags" />
+      <button type="submit">Save Changes</button>
+    </form>
+  </div>
+</div> -->
+
+
+<!-- <app-header></app-header>
+
+<div class="details-container">
+  <h1 class="page-title">Video Metadata</h1>
+
+ 
+  <div class="card current-metadata">
+    <h2>Current Metadata</h2>
+    <div class="metadata-row"><strong>Title:</strong> {{ current?.title }}</div>
+    <div class="metadata-row"><strong>Description:</strong> {{ current?.description }}</div>
+    <div class="metadata-row"><strong>Category:</strong> {{ current?.categoryName }}</div>
+    <div class="metadata-row"><strong>Tags:</strong> {{ current?.tags?.join(', ') }}</div>
+  </div>
+
+
+  <div *ngIf="history.length > 0" class="history-section">
+    <h2>Change History</h2>
+    <div *ngFor="let entry of history" class="card history-card">
+      <div class="metadata-row">
+        <strong>Changed At:</strong>
+        {{ entry.changedAt | date: 'medium' }}
+      </div>
+      <div class="metadata-row"><strong>Title:</strong> {{ entry.oldMetadata?.Title }}</div>
+      <div class="metadata-row"><strong>Description:</strong> {{ entry.oldMetadata?.Description }}</div>
+      <div class="metadata-row"><strong>Category:</strong> {{ entry.oldMetadata?.CategoryName }}</div>
+      <div class="metadata-row"><strong>Tags:</strong> {{ entry.oldMetadata?.Tags?.join(', ') }}</div>
+    </div>
+  </div>
+
+ 
+  <div *ngIf="isOwner" class="edit-section">
+    <h2>Edit Metadata</h2>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label>Title</label>
+      <input formControlName="title" placeholder="Title" />
+
+      <label>Description</label>
+      <textarea formControlName="description" placeholder="Description"></textarea>
+
+      <label>Choose Category</label>
+        <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="category-tree">
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+            <mat-radio-button
+            [checked]="selectedCategoryId === node.id"
+            (change)="selectedCategoryId = node.id"
+            >
+            {{ node.name }}
+            </mat-radio-button>
+        </mat-tree-node>
+
+        <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+            <button mat-icon-button matTreeNodeToggle>
+            <mat-icon>
+                {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+            </mat-icon>
+            </button>
+            <mat-radio-button
+            [checked]="selectedCategoryId === node.id"
+            (change)="selectedCategoryId = node.id"
+            >
+            {{ node.name }}
+            </mat-radio-button>
+        </mat-tree-node>
+        </mat-tree>
+
+
+      <label>Tags (comma-separated)</label>
+      <input formControlName="tags" placeholder="e.g. angular, dotnet" />
+
+      <button type="submit">Update Metadata</button>
+    </form>
+  </div>
+
+  <div *ngIf="!isOwner" class="not-owner-note">
+    <p>You must be the uploader to edit this video's metadata.</p>
+  </div>
+</div> -->
+
+<app-header></app-header>
+
+<div class="details-container">
+  <h1 class="page-title">Video Metadata</h1>
+
+  <!-- CURRENT METADATA -->
+  <div class="card current-metadata">
+    <h2>Current Metadata</h2>
+    <div class="metadata-row"><strong>Title:</strong> {{ current?.title }}</div>
+    <div class="metadata-row"><strong>Description:</strong> {{ current?.description }}</div>
+    <div class="metadata-row"><strong>Category:</strong> {{ current?.categoryName }}</div>
+    <div class="metadata-row"><strong>Tags:</strong> {{ current?.tags?.join(', ') }}</div>
+  </div>
+
+  <!-- HISTORY -->
+  <div *ngIf="history.length > 0" class="history-section">
+    <h2>Change History</h2>
+    <div *ngFor="let entry of history" class="card history-card">
+      <div class="metadata-row">
+        <strong>Changed At:</strong>
+        {{ entry.changedAt | date: 'medium' }}
+      </div>
+      <div class="metadata-row"><strong>Title:</strong> {{ entry.oldMetadata?.Title }}</div>
+      <div class="metadata-row"><strong>Description:</strong> {{ entry.oldMetadata?.Description }}</div>
+      <div class="metadata-row"><strong>Category:</strong> {{ entry.oldMetadata?.CategoryName }}</div>
+      <div class="metadata-row"><strong>Tags:</strong> {{ entry.oldMetadata?.Tags?.join(', ') }}</div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div *ngIf="isOwner" class="edit-section">
+    <h2>Edit Metadata</h2>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label>Title</label>
+      <input formControlName="title" placeholder="Title" />
+
+      <label>Description</label>
+      <textarea formControlName="description" placeholder="Description"></textarea>
+
+      <label>Choose Category</label>
+      <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="category-tree">
+
+        <!-- <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+          <mat-radio-button
+            name="category"
+            [checked]="selectedCategoryId === node.id"
+            (change)="onCategorySelect(node.id)">
+            {{ node.name }}
+          </mat-radio-button>
+        </mat-tree-node>
+
+        <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+            <button mat-icon-button matTreeNodeToggle type="button">
+              <mat-icon>
+                {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+              </mat-icon>
+            </button>
+            <mat-radio-button
+              name="category"
+              [checked]="selectedCategoryId === node.id"
+              (change)="onCategorySelect(node.id)">
+              {{ node.name }}
+            </mat-radio-button>
+          </mat-tree-node> -->
+
+            <!-- Leaf Node -->
+            <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+                <mat-radio-button
+                  name="category"
+                  [checked]="selectedCategoryId === node.id"
+                  (change)="onCategorySelect(node.id)"
+                  [style.padding-left.px]="node.level * 24"
+                >
+                  {{ node.name }}
+                </mat-radio-button>
+              </mat-tree-node>
+              
+              <!-- Expandable node (has children) -->
+              <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
+                <div class="node-wrapper" [style.padding-left.px]="node.level * 24">
+                  <button mat-icon-button matTreeNodeToggle type="button">
+                    <mat-icon>
+                      {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+                    </mat-icon>
+                  </button>
+                  <mat-radio-button
+                    name="category"
+                    [checked]="selectedCategoryId === node.id"
+                    (change)="onCategorySelect(node.id)">
+                    {{ node.name }}
+                  </mat-radio-button>
+                </div>
+              </mat-tree-node>
+
+      </mat-tree>
+
+      <label>Tags (comma-separated)</label>
+      <input formControlName="tags" placeholder="e.g. angular, dotnet" />
+
+      <button type="submit">Update Metadata</button>
+    </form>
+  </div>
+
+  <div *ngIf="!isOwner" class="not-owner-note">
+    <p>You must be the uploader to edit this video's metadata.</p>
+  </div>
+</div>

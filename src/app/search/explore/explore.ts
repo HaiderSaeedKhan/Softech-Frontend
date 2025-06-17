@@ -14,6 +14,12 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CategoryService, CategoryNode } from '../../services/category';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
+import { I } from '@angular/cdk/a11y-module.d-DBHGyKoh';
+
+import { Auth } from '../../services/auth';
+import { FormsModule } from '@angular/forms';
+
+import { Router } from '@angular/router';
 
 interface FlatCategoryNode {
   id: number;
@@ -37,6 +43,7 @@ interface FlatCategoryNode {
     BoxVideoComponent,
     MatTreeModule,
     MatCheckboxModule,
+    FormsModule
   ],
   templateUrl: './explore.html',
   styleUrls: ['./explore.css']
@@ -50,6 +57,9 @@ export class ExploreComponent implements OnInit {
 
   selectedCategoryIds = new Set<number>();
   categoryTree: CategoryNode[] = [];
+
+  onlyMyVideos = false;
+  isAuthenticated = false;
 
   private transformer = (node: CategoryNode, level: number): FlatCategoryNode => ({
     id: node.id,
@@ -74,9 +84,11 @@ export class ExploreComponent implements OnInit {
   dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
   hasChild = (_: number, node: FlatCategoryNode) => node.expandable;
 
-  constructor(private searchService: SearchService, private categoryService: CategoryService) {}
+  constructor(private searchService: SearchService, private categoryService: CategoryService, private authService: Auth, private router: Router) {}
 
   ngOnInit(): void {
+    this.isAuthenticated = this.authService.isAuthenticated();
+
     this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -179,7 +191,7 @@ export class ExploreComponent implements OnInit {
     const query = this.searchControl.value?.trim() ?? '';
   
     const categoryIds = Array.from(this.selectedCategoryIds);
-    this.searchService.fullTextSearch(query, categoryIds).subscribe(res => {
+    this.searchService.fullTextSearch(query, categoryIds, this.onlyMyVideos).subscribe(res => {
       this.results = res.hits;
       this.highlights = res.highlights;
     });
@@ -187,5 +199,9 @@ export class ExploreComponent implements OnInit {
   
   getFieldHighlight(id: number, field: 'title' | 'description' | 'tags'): string {
     return this.highlights?.[id]?.[field]?.join('...') ?? '';
+  }
+
+  goToVideo(id: number): void {
+    this.router.navigate(['/video', id]);
   }
 }

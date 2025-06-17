@@ -9,6 +9,7 @@ export const routes: Routes = [
   { path: 'register', loadComponent: () => import('./auth/register/register').then(m => m.Register) },
   { path: 'upload', loadComponent: () => import('./upload/upload').then(m => m.UploadComponent) },
   { path: 'search', loadComponent: () => import('./search/search/search').then(m => m.SearchComponent) },
+  { path: 'video/:id', loadComponent: () => import('./video-details/video-details').then(m => m.VideoDetailsComponent) },
   { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard').then(m => m.Dashboard) },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
