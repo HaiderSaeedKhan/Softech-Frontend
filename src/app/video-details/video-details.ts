@@ -285,6 +285,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatIconModule } from '@angular/material/icon';
 import { FlatTreeControl } from '@angular/cdk/tree';
 
+import { Tag } from '../services/tag';
+
 interface FlatCategoryNode {
   id: number;
   name: string;
@@ -341,7 +343,8 @@ export class VideoDetailsComponent implements OnInit {
     private auth: Auth,
     private fb: FormBuilder,
     private router: Router,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private tagService: Tag
   ) {}
 
   ngOnInit(): void {
@@ -410,6 +413,24 @@ export class VideoDetailsComponent implements OnInit {
     this.videoService.updateVideo(this.videoId, dto).subscribe(() => {
       alert('Metadata updated!');
       this.router.navigate(['/search']);
+    });
+  }
+
+  generateRecommendedTags(): void {
+    const dto = {
+      title: this.form.value.title || '',
+      description: this.form.value.description || ''
+    };
+  
+    this.tagService.suggestTags(dto).subscribe(suggested => {
+      const existing = (this.form.value.tags || '')
+        .split(',')
+        .map((t: string) => t.trim())
+        .filter((t :string) => t);
+  
+      const merged = Array.from(new Set([...existing, ...suggested]));
+      this.form.patchValue({ tags: merged.join(', ') });
+      alert('Recommended tags added!');
     });
   }
 

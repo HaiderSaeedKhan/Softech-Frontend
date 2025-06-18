@@ -116,7 +116,10 @@
     <div class="metadata-row"><strong>Title:</strong> {{ current?.title }}</div>
     <div class="metadata-row"><strong>Description:</strong> {{ current?.description }}</div>
     <div class="metadata-row"><strong>Category:</strong> {{ current?.categoryName }}</div>
-    <div class="metadata-row"><strong>Tags:</strong> {{ current?.tags?.join(', ') }}</div>
+    <div class="metadata-row">
+      <strong>Tags:</strong>
+      <span class="tag" *ngFor="let tag of current?.tags">{{ tag }}</span>
+    </div>
   </div>
 
   <!-- HISTORY -->
@@ -130,7 +133,11 @@
       <div class="metadata-row"><strong>Title:</strong> {{ entry.oldMetadata?.Title }}</div>
       <div class="metadata-row"><strong>Description:</strong> {{ entry.oldMetadata?.Description }}</div>
       <div class="metadata-row"><strong>Category:</strong> {{ entry.oldMetadata?.CategoryName }}</div>
-      <div class="metadata-row"><strong>Tags:</strong> {{ entry.oldMetadata?.Tags?.join(', ') }}</div>
+      <div class="metadata-row">
+        <strong>Tags:</strong>
+        <span class="tag" *ngFor="let tag of current?.tags">{{ tag }}</span>
+      </div>
+      
     </div>
   </div>
 
@@ -201,7 +208,15 @@
 
       </mat-tree>
 
-      <label>Tags (comma-separated)</label>
+      <div class="tags-label-row">
+        <label>Tags (comma-separated)</label>
+        <button
+          type="button"
+          (click)="generateRecommendedTags()"
+          class="generate-tags-btn">
+          Generate Tags
+        </button>
+      </div>
       <input formControlName="tags" placeholder="e.g. angular, dotnet" />
 
       <button type="submit">Update Metadata</button>
