@@ -381,26 +381,42 @@ export class UploadComponent implements OnInit {
       description,
       categoryId: this.selectedCategoryId!,
       tags,
-      uploadUrl: fileName // just the name, backend turns it into full blob URL + SAS
+      uploadUrl: fileName // the backend generates full SAS URL from this
     };
   
     this.videoService.saveMetadata(metadata).subscribe({
       next: async ({ uploadUrl }) => {
         try {
+          // Upload video in chunks using the SAS URL
           await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
             console.log(`Progress: ${p}%`);
           });
   
-          alert('Upload complete & metadata saved!');
-          window.location.reload();
+          // Get the clean blob URL (remove SAS token)
+          const blobUrl = uploadUrl.split('?')[0];
+  
+          // Confirm upload after all chunks are uploaded
+          this.videoService.confirmUpload(blobUrl).subscribe({
+            next: () => {
+              alert('Upload complete & metadata saved!');
+              window.location.reload();
+            },
+            error: () => {
+              alert('Upload succeeded but confirmation failed.');
+            }
+          });
+  
         } catch (err) {
           console.error('Upload error:', err);
           alert('Video upload failed.');
         }
       },
-      error: () => alert('Saving metadata failed.')
+      error: () => {
+        alert('Saving metadata failed.');
+      }
     });
   }
+  
   
   
   

@@ -35,7 +35,7 @@ export class VideoService {
     const uploadId = `${file.name}-${file.size}`;
 
     for (let i = 0; i < totalBlocks; i++) {
-      const blockId = btoa(`${uploadId}-${i}`);
+      const blockId = btoa(i.toString().padStart(6, '0'));
       const start = i * blockSize;
       const end = Math.min(start + blockSize, file.size);
       const chunk = file.slice(start, end);
@@ -61,6 +61,11 @@ export class VideoService {
   getVideoUrl(id: number): Observable<{ video: string }> {
     return this.http.get<{ video: string }>(`${this.baseUrl}/get-video-url/${id}`);
   }
+
+  confirmUpload(blobUrl: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/confirm-upload`, { blobUrl }); // ✅ wrap it
+  }
+  
 
   
 }
