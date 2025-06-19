@@ -274,83 +274,134 @@ export class UploadComponent implements OnInit {
     }
   }
 
+
   // onSubmit(): void {
   //   const { title, description, manualTags } = this.form.value;
   
-  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId) {
-  //     alert('All fields including file and category must be filled.');
+  //   // ✅ Basic validation
+  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || this.manualTagsControls.length === 0) {
+  //     alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
   //     return;
   //   }
   
-  //   const tags = manualTags.filter((tag: string) => tag?.trim().length > 0);
+  //   // ✅ Filter non-empty manual tags and type them correctly
+  //   const tags: string[] = (manualTags as string[]).filter((tag: string) => tag?.trim().length > 0);
+
+  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
+  //     alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
+  //     return; // 🔁 Prevent submission if any field is invalid
+  //   }
   
+  //   // ✅ Create FormData for multipart/form-data submission
   //   const formData = new FormData();
   //   formData.append('title', title);
   //   formData.append('description', description);
   //   formData.append('categoryId', this.selectedCategoryId.toString());
   //   formData.append('file', this.selectedFile);
-  //   tags.forEach(tag => formData.append('tags', tag));
   
+  //   tags.forEach((tag: string) => {
+  //     formData.append('tags', tag);
+  //   });
+  
+  //   // ✅ Send to backend
   //   this.videoService.uploadVideo(formData).subscribe({
   //     next: () => {
   //       alert('Video uploaded successfully!');
+  //       window.location.reload();
   //       this.form.reset();
   //       this.selectedFile = null;
   //       this.selectedCategoryId = null;
   //       this.tags = [];
+  //       this.selectedFile = null;
   //     },
-  //     error: err => {
+  //     error: (err) => {
   //       console.error('Upload failed:', err);
-  //       alert('Upload failed.');
+  //       alert('Upload failed. Please try again.');
   //     }
   //   });
   // }
 
+  // onSubmit(): void {
+  //   const { title, description, manualTags } = this.form.value;
+  //   const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
+  
+  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
+  //     alert('All fields must be filled.');
+  //     return;
+  //   }
+  
+  //   const fileName = `${Date.now()}_${this.selectedFile.name}`;
+  
+  //   this.videoService.getSasUrl(fileName).subscribe({
+  //     next: async ({ uploadUrl }) => {
+  //       try {
+  //         await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
+  //           console.log(`Progress: ${p}%`);
+  //         });
+  
+  //         const blobUrl = uploadUrl.split('?')[0]; // remove SAS query
+  //         const metadata = {
+  //           title,
+  //           description,
+  //           categoryId: this.selectedCategoryId!,
+  //           tags,
+  //           uploadUrl: blobUrl
+  //         };
+  
+  //         this.videoService.saveMetadata(metadata).subscribe({
+  //           next: () => {
+  //             alert('Upload complete & metadata saved!');
+  //             window.location.reload();
+  //           },
+  //           error: () => alert('Upload succeeded but saving metadata failed.')
+  //         });
+  
+  //       } catch (err) {
+  //         console.error('Upload error:', err);
+  //         alert('Video upload failed.');
+  //       }
+  //     },
+  //     error: () => alert('Could not get SAS upload URL')
+  //   });
+  // }
+
+
   onSubmit(): void {
     const { title, description, manualTags } = this.form.value;
+    const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
   
-    // ✅ Basic validation
-    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || this.manualTagsControls.length === 0) {
-      alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
+    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
+      alert('All fields must be filled.');
       return;
     }
   
-    // ✅ Filter non-empty manual tags and type them correctly
-    const tags: string[] = (manualTags as string[]).filter((tag: string) => tag?.trim().length > 0);
-
-    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
-      alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
-      return; // 🔁 Prevent submission if any field is invalid
-    }
+    const fileName = `${Date.now()}_${this.selectedFile.name}`;
+    const metadata = {
+      title,
+      description,
+      categoryId: this.selectedCategoryId!,
+      tags,
+      uploadUrl: fileName // just the name, backend turns it into full blob URL + SAS
+    };
   
-    // ✅ Create FormData for multipart/form-data submission
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('categoryId', this.selectedCategoryId.toString());
-    formData.append('file', this.selectedFile);
+    this.videoService.saveMetadata(metadata).subscribe({
+      next: async ({ uploadUrl }) => {
+        try {
+          await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
+            console.log(`Progress: ${p}%`);
+          });
   
-    tags.forEach((tag: string) => {
-      formData.append('tags', tag);
-    });
-  
-    // ✅ Send to backend
-    this.videoService.uploadVideo(formData).subscribe({
-      next: () => {
-        alert('Video uploaded successfully!');
-        window.location.reload();
-        this.form.reset();
-        this.selectedFile = null;
-        this.selectedCategoryId = null;
-        this.tags = [];
-        this.selectedFile = null;
+          alert('Upload complete & metadata saved!');
+          window.location.reload();
+        } catch (err) {
+          console.error('Upload error:', err);
+          alert('Video upload failed.');
+        }
       },
-      error: (err) => {
-        console.error('Upload failed:', err);
-        alert('Upload failed. Please try again.');
-      }
+      error: () => alert('Saving metadata failed.')
     });
   }
+  
   
   
 }

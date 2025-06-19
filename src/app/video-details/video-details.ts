@@ -314,6 +314,7 @@ export class VideoDetailsComponent implements OnInit {
   history: any[] = [];
   form!: FormGroup;
   isOwner = false;
+  videoUrl: string = '';
 
   selectedCategoryId: number | null = null;
 
@@ -349,6 +350,13 @@ export class VideoDetailsComponent implements OnInit {
 
   ngOnInit(): void {
     this.videoId = Number(this.route.snapshot.paramMap.get('id'));
+    console.log('Video ID from route:', this.videoId);
+
+    this.videoService.getVideoUrl(this.videoId).subscribe(res => {
+      console.log('🎥 Got video URL:', res.video);
+      this.videoUrl = res.video;
+    });
+    
 
     this.videoService.getVideoMetadata(this.videoId).subscribe(data => {
       this.current = data.current;
