@@ -156,3 +156,10 @@
     </div>
   </form>
 </div>
+<div *ngIf="resumableUploads.length > 0">
+  <h3>Resumable Uploads</h3>
+  <div *ngFor="let vid of resumableUploads">
+    <p>{{ vid.title }} - {{ vid.uploadedBlockCount }} blocks uploaded</p>
+    <button (click)="resumeUpload(vid)">Resume</button>
+  </div>
+</div>

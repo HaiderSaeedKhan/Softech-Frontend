@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BlockBlobClient } from '@azure/storage-blob';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class VideoService {
@@ -42,6 +43,10 @@ export class VideoService {
 
       await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
       blockIds.push(blockId);
+      console.log(sasUrl)
+      console.log(i+1)
+      const fullUrl = sasUrl.split('?')[0];
+      await lastValueFrom(this.trackBlock(fullUrl, i + 1));
       onProgress(Math.round(((i + 1) / totalBlocks) * 100));
     }
 
@@ -66,6 +71,65 @@ export class VideoService {
     return this.http.post(`${this.baseUrl}/confirm-upload`, { blobUrl }); // ✅ wrap it
   }
   
+  trackBlock(uploadUrl: string, blockCount: number) {
+    return this.http.post(`${this.baseUrl}/track-block`, {
+      uploadUrl,
+      blockCount
+    });
+  }
+  
+  getResumableUploads() {
+    return this.http.get<any[]>(`${this.baseUrl}/resumable`);
+  }
 
+  getUploadedBlockCount(uploadUrl: string) {
+    return this.http.get<{ uploadedBlockCount: number }>(
+      `${this.baseUrl}/block-count?uploadUrl=${encodeURIComponent(uploadUrl)}`
+    );
+  }
+
+  async uploadFileToBlobTwo(
+    file: File,
+    sasUrl: string,
+    uploadUrl: string,
+    onProgress: (p: number) => void,
+    uploadedBlockCount: number // ✅ ADDED
+  ) {
+    const blockBlobClient = new BlockBlobClient(sasUrl);
+    const blockSize = 1 * 1024 * 1024; // 1MB
+    const totalBlocks = Math.ceil(file.size / blockSize);
+    const blockIds: string[] = [];
+  
+    // ✅ Always generate full block list
+    for (let i = 0; i < totalBlocks; i++) {
+      blockIds.push(btoa(i.toString().padStart(6, '0')));
+    }
+  
+    // ✅ Resume from uploadedBlockCount
+    for (let i = uploadedBlockCount; i < totalBlocks; i++) {
+      const blockId = blockIds[i];
+      const start = i * blockSize;
+      const end = Math.min(start + blockSize, file.size);
+      const chunk = file.slice(start, end);
+  
+      await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
+      await lastValueFrom(this.trackBlock(uploadUrl, i + 1));
+      onProgress(Math.round(((i + 1) / totalBlocks) * 100));
+    }
+  
+    // ✅ Commit full block list (not just the ones uploaded in this session)
+    await blockBlobClient.commitBlockList(blockIds);
+  }
+
+  async calculateSHA256(file: File): Promise<string> {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  
+
+  
+  
   
 }
