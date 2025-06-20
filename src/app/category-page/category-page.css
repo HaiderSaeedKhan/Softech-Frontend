@@ -1,0 +1,38 @@
+.upload-card {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+  }
+  
+  .page-title {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+  
+  .tree-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .full-width {
+    width: 100%;
+  }
+  
+  .tree-node {
+    display: flex;
+    align-items: center;
+    margin: 4px 0;
+  }
+  
+  .tree-toggle-icon {
+    margin-right: 6px;
+    cursor: pointer;
+  }
+
+  .tree-section li {
+    list-style-type: none; /* 🚫 remove bullets */
+    margin-left: 0;
+    padding-left: 0;
+  }

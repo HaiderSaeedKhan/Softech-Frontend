@@ -41,6 +41,10 @@ export class Login implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (this.auth.isAuthenticated()) {
+      this.router.navigate(['/search']);
+      return;
+    }
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]

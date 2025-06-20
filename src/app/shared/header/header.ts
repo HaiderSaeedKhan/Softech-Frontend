@@ -41,5 +41,8 @@ export class Header {
       ? this.router.navigate(['/upload'])
       : this.router.navigate(['/login']);
   }
+  goToCategory(): void {
+    this.router.navigate(['/category-page']);
+  }
 }
 

@@ -1,0 +1,57 @@
+<app-header />
+
+<div class="upload-card">
+  <h1 class="page-title">Add New Category</h1>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <!-- Category Tree with Selection -->
+    <div class="tree-section">
+      <label>Select Parent Category:</label>
+      <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+
+        <!-- Leaf node -->
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding>
+          <li>
+            <button mat-icon-button disabled disabled type="button"></button>
+            <mat-radio-button
+              [checked]="selectedParentId === node.id"
+              (change)="selectParent(node)"
+            >
+              {{ node.name }}
+            </mat-radio-button>
+          </li>
+        </mat-tree-node>
+
+        <!-- Expandable node -->
+        <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodeToggle matTreeNodePadding>
+          <li>
+            <button mat-icon-button matTreeNodeToggle type="button">
+              <mat-icon>
+                {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+              </mat-icon>
+            </button>
+            <mat-radio-button
+              [checked]="selectedParentId === node.id"
+              (change)="selectParent(node)"
+            >
+              {{ node.name }}
+            </mat-radio-button>
+          </li>
+        </mat-tree-node>
+      </mat-tree>
+    </div>
+
+    <!-- Input for new category name -->
+    <mat-form-field class="full-width">
+      <mat-label>New Category Name</mat-label>
+      <input matInput formControlName="name" required />
+      <mat-error *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched">
+        Name is required
+      </mat-error>
+    </mat-form-field>
+
+    <button mat-raised-button color="accent" type="submit" [disabled]="form.invalid || selectedParentId === null">
+      Create Category
+    </button>
+  </form>
+</div>

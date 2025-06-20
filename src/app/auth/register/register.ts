@@ -36,6 +36,10 @@ export class Register {
   constructor(private fb: FormBuilder, private auth: Auth, private router: Router, private snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
+    if (this.auth.isAuthenticated()) {
+      this.router.navigate(['/search']);
+      return;
+    }
     this.registerForm = this.fb.group({
       username: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],

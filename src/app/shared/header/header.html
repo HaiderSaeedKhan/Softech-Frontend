@@ -4,8 +4,8 @@
 
   <!-- Navigation -->
   <button mat-button routerLink="/search">Search</button>
-  <button mat-button (click)="goToUpload()">Upload</button>
-
+  <button mat-button *ngIf="loggedIn" (click)="goToUpload()">Upload</button>
+  <button mat-button *ngIf="loggedIn" (click)="goToCategory()">Create Category</button>
   <span class="spacer"></span>
 
   <!-- Show login/register when logged out -->

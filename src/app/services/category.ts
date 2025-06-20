@@ -17,4 +17,8 @@ export class CategoryService {
   getTree(): Observable<CategoryNode[]> {
     return this.http.get<CategoryNode[]>(`${this.baseUrl}/getTree`);
   }
+
+  createCategory(dto: { name: string; parentId: number }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/create`, dto);
+  }
 }

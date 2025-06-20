@@ -166,6 +166,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Header } from '../shared/header/header';
 import { VideoService } from '../services/video'; // ✅ new import
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 interface FlatCategoryNode {
   id: number;
@@ -188,7 +189,8 @@ interface FlatCategoryNode {
     MatIconModule,
     MatTreeModule,
     MatCheckboxModule,
-    Header
+    Header,
+    MatProgressSpinnerModule
   ]
 })
 export class UploadComponent implements OnInit {
@@ -197,6 +199,9 @@ export class UploadComponent implements OnInit {
   selectedFile: File | null = null;
 
   resumableUploads: any[] = [];
+
+  isUploading: boolean = false;
+  activeUploadType: 'main' | number | null = null;
 
   // ✅ category tree logic
   selectedCategoryId: number | null = null;
@@ -373,11 +378,13 @@ export class UploadComponent implements OnInit {
 
 
   onSubmit(): void {
+    this.activeUploadType = 'main';
     const { title, description, manualTags } = this.form.value;
     const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
   
     if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
       alert('All fields must be filled.');
+      this.activeUploadType = null;
       return;
     }
   
@@ -410,34 +417,39 @@ export class UploadComponent implements OnInit {
             },
             error: () => {
               alert('Upload succeeded but confirmation failed.');
+              this.activeUploadType = null;
             }
           });
   
         } catch (err) {
           console.error('Upload error:', err);
           alert('Video upload failed.');
+          this.activeUploadType = null;
         }
       },
       error: () => {
         alert('Saving metadata failed.');
+        this.activeUploadType = null;
       }
     });
   }
   
   resumeUpload(video: any): void {
+    this.activeUploadType = video.id ?? video.uploadUrl;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'video/*';
   
     input.onchange = async () => {
       const file = input.files?.[0];
-      if (!file) return;
+      if (!file) {this.activeUploadType = null; return; } 
 
     const currentHash = await this.videoService.calculateSHA256(file);
     const savedHash = localStorage.getItem(`video-hash-${video.uploadUrl}`);
 
     if (savedHash && savedHash !== currentHash) {
       alert('⚠️ Selected file is different from the original upload. Resume aborted.');
+      this.activeUploadType = null;
       return;
     }
 
@@ -451,6 +463,7 @@ export class UploadComponent implements OnInit {
           // Validate file size
           if (file.size < uploadedBlockCount * 1024 * 1024) {
             alert('Selected file is smaller than the uploaded size.');
+            this.activeUploadType = null;
             return;
           }
   
@@ -474,12 +487,13 @@ export class UploadComponent implements OnInit {
               } catch (err) {
                 console.error('Resume failed', err);
                 alert('Resuming upload failed.');
+                this.activeUploadType = null;
               }
             },
-            error: () => alert('Failed to get upload URL.')
+            error: () => {alert('Failed to get upload URL.'),this.activeUploadType = null;}
           });
         },
-        error: () => alert('Could not fetch uploaded block count.')
+        error: () => {alert('Could not fetch uploaded block count.'),this.activeUploadType = null;}
       });
     };
   

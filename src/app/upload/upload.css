@@ -1,4 +1,4 @@
-.upload-card {
+/* .upload-card {
     max-width: 600px;
     margin: auto;
     padding: 2rem;
@@ -56,4 +56,97 @@
 
   mat-tree li {
     list-style-type: none;
+  } */
+
+
+  .page-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+    flex-wrap: wrap;
   }
+  
+  .left-panel, .right-panel {
+    flex: 1 1 400px;
+  }
+  
+  .upload-card, .resume-card {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  
+  .upload-card {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .full-width {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .page-title {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .tag-box {
+    margin-top: 1rem;
+  }
+  
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .tag-item {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+  }
+  
+  .tag-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .tag-field {
+    flex: 1;
+  }
+  
+  .file-upload-box {
+    margin-top: 2rem;
+  }
+  
+  .selected-file {
+    margin-top: 0.5rem;
+    color: #1976d2;
+  }
+  
+  .resume-card h2 {
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .resume-item {
+    background-color: #f3f3f3;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  mat-tree li {
+    list-style-type: none;
+  }
+  

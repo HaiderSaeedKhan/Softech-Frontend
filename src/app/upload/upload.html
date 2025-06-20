@@ -1,65 +1,10 @@
-<!--
-<app-header />
+<!-- <app-header />
 
 <div class="upload-card">
   <h1 class="page-title">Upload Video</h1>
 
   <form [formGroup]="form">
-    <mat-form-field class="full-width">
-      <mat-label>Title</mat-label>
-      <input matInput formControlName="title" />
-    </mat-form-field>
-
-    <mat-form-field class="full-width">
-      <mat-label>Description</mat-label>
-      <textarea matInput formControlName="description"></textarea>
-    </mat-form-field>
-
-    <button mat-raised-button color="primary" type="button" (click)="onGenerateTags()">
-      Generate Tags
-    </button>
-
-    <div *ngIf="tags.length > 0" class="tag-box">
-      <label>Suggested Tags:</label>
-      <div class="tag-list">
-        <span class="tag-item" *ngFor="let tag of tags">{{ tag }}</span>
-      </div>
-    </div>
-
-    <div class="tag-box">
-      <label>Manual Tags:</label>
-      <div *ngFor="let tagCtrl of manualTagsControls; let i = index" class="tag-input-row">
-        <mat-form-field class="tag-field">
-          <input matInput [formControl]="tagCtrl" placeholder="Enter tag" />
-        </mat-form-field>
-
-        <button mat-icon-button color="primary" type="button" (click)="addTagField()" *ngIf="i === manualTagsControls.length - 1">
-          <mat-icon>add</mat-icon>
-        </button>
-
-        <button mat-icon-button color="warn" type="button" (click)="removeTagField(i)" *ngIf="manualTagsControls.length > 1">
-          <mat-icon>remove</mat-icon>
-        </button>
-      </div>
-    </div>
-
-    <div class="file-upload-box">
-      <label>Upload Video:</label>
-      <input type="file" accept="video/*" (change)="onFileSelected($event)" />
-      <div *ngIf="selectedFile" class="selected-file">
-        Selected: {{ selectedFile.name }}
-      </div>
-    </div>
-  </form>
-</div>
--->
-<app-header />
-
-<div class="upload-card">
-  <h1 class="page-title">Upload Video</h1>
-
-  <form [formGroup]="form">
-    <!-- Title -->
+    Title 
     <mat-form-field class="full-width">
       <mat-label>Title</mat-label>
       <input matInput formControlName="title" required />
@@ -68,7 +13,7 @@
       </mat-error>
     </mat-form-field>
 
-    <!-- Description -->
+    Description
     <mat-form-field class="full-width">
       <mat-label>Description</mat-label>
       <textarea matInput formControlName="description" required></textarea>
@@ -77,7 +22,7 @@
       </mat-error>
     </mat-form-field>
 
-    <!-- Suggested Tags -->
+    Suggested Tags
     <button mat-raised-button color="primary" type="button" (click)="onGenerateTags()">
       Generate Tags
     </button>
@@ -89,7 +34,7 @@
       </div>
     </div>
 
-    <!-- Manual Tags -->
+    Manual Tags
     <div class="tag-box">
       <label>Enter Manual Tags (Own or Suggested):</label>
       <div *ngFor="let tagCtrl of manualTagsControls; let i = index" class="tag-input-row">
@@ -105,11 +50,11 @@
       </div>
     </div>
 
-    <!-- ✅ Category Tree -->
+    Category Tree 
     <div class="tag-box">
       <label>Select Category:</label>
       <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-        <!-- Leaf node -->
+       L Leaf node 
         <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding>
           <li>
             <button mat-icon-button disabled></button>
@@ -122,7 +67,7 @@
           </li>
         </mat-tree-node>
 
-        <!-- Expandable node -->
+      Expandable node 
         <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodeToggle matTreeNodePadding>
           <li>
             <button mat-icon-button matTreeNodeToggle>
@@ -141,7 +86,7 @@
       </mat-tree>
     </div>
 
-    <!-- File Upload -->
+     File Upload 
     <div class="file-upload-box">
       <label>Upload Video:</label>
       <input type="file" accept="video/*" (change)="onFileSelected($event)" />
@@ -161,5 +106,122 @@
   <div *ngFor="let vid of resumableUploads">
     <p>{{ vid.title }} - {{ vid.uploadedBlockCount }} blocks uploaded</p>
     <button (click)="resumeUpload(vid)">Resume</button>
+  </div>
+</div> -->
+
+<app-header />
+
+<div class="page-container">
+  <!-- Upload Form Card -->
+  <div class="left-panel">
+    <div class="upload-card">
+      <h1 class="page-title">Upload Video</h1>
+
+      <form [formGroup]="form">
+        <!-- Title -->
+        <mat-form-field class="full-width">
+          <mat-label>Title</mat-label>
+          <input matInput formControlName="title" required />
+          <mat-error *ngIf="form.get('title')?.hasError('required') && form.get('title')?.touched">
+            Title is required
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Description -->
+        <mat-form-field class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" required></textarea>
+          <mat-error *ngIf="form.get('description')?.hasError('required') && form.get('description')?.touched">
+            Description is required
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Suggested Tags -->
+        <button mat-raised-button color="primary" type="button" (click)="onGenerateTags()">Generate Tags</button>
+
+        <div *ngIf="tags.length > 0" class="tag-box">
+          <label>Suggested Tags:</label>
+          <div class="tag-list">
+            <span class="tag-item" *ngFor="let tag of tags">{{ tag }}</span>
+          </div>
+        </div>
+
+        <!-- Manual Tags -->
+        <div class="tag-box">
+          <label>Enter Manual Tags:</label>
+          <div *ngFor="let tagCtrl of manualTagsControls; let i = index" class="tag-input-row">
+            <mat-form-field class="tag-field">
+              <input matInput [formControl]="tagCtrl" placeholder="Enter tag" />
+            </mat-form-field>
+            <button mat-icon-button color="primary" type="button" (click)="addTagField()" *ngIf="i === manualTagsControls.length - 1">
+              <mat-icon>add</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" type="button" (click)="removeTagField(i)" *ngIf="manualTagsControls.length > 1">
+              <mat-icon>remove</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category Tree -->
+        <div class="tag-box">
+          <label>Select Category:</label>
+          <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
+            <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding>
+              <li>
+                <button mat-icon-button disabled></button>
+                <mat-checkbox [checked]="selectedCategoryId === node.id" (change)="selectedCategoryId = node.id">
+                  {{ node.name }}
+                </mat-checkbox>
+              </li>
+            </mat-tree-node>
+            <mat-tree-node *matTreeNodeDef="let node; when: hasChild" matTreeNodeToggle matTreeNodePadding>
+              <li>
+                <button mat-icon-button matTreeNodeToggle>
+                  <mat-icon>{{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                </button>
+                <mat-checkbox [checked]="selectedCategoryId === node.id" (change)="selectedCategoryId = node.id">
+                  {{ node.name }}
+                </mat-checkbox>
+              </li>
+            </mat-tree-node>
+          </mat-tree>
+        </div>
+
+        <!-- File Upload -->
+        <div class="file-upload-box">
+          <label>Upload Video:</label>
+          <input type="file" accept="video/*" (change)="onFileSelected($event)" />
+          <div *ngIf="selectedFile" class="selected-file">Selected: {{ selectedFile.name }}</div>
+        </div>
+
+        <!-- Submit -->
+        <div style="margin-top: 2rem; text-align: center;">
+          <!-- <button mat-raised-button color="accent" type="button" (click)="onSubmit()">Submit Video</button> -->
+          <button mat-raised-button color="accent" type="button"
+                  (click)="onSubmit()"
+                  [disabled]="activeUploadType !== null">
+            <mat-progress-spinner *ngIf="activeUploadType === 'main'" diameter="20" mode="indeterminate"></mat-progress-spinner>
+            <span *ngIf="activeUploadType !== 'main'">Submit Video</span>
+          </button>    
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Resumable Uploads Panel -->
+  <div class="right-panel" *ngIf="resumableUploads.length > 0">
+    <div class="resume-card">
+      <h2>Resumable Uploads</h2>
+      <div *ngFor="let vid of resumableUploads" class="resume-item">
+        <p><strong>{{ vid.title }}</strong><br /><small>{{ vid.uploadedBlockCount }} blocks uploaded</small></p>
+        <!-- <button mat-stroked-button color="primary" (click)="resumeUpload(vid)">Resume</button> -->
+        <button mat-stroked-button color="primary"
+        (click)="resumeUpload(vid)"
+        [disabled]="activeUploadType !== null && activeUploadType !== vid.uploadUrl">
+          <mat-progress-spinner *ngIf="activeUploadType === vid.uploadUrl" diameter="20" mode="indeterminate"></mat-progress-spinner>
+          <span *ngIf="activeUploadType !== vid.uploadUrl">Resume</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
