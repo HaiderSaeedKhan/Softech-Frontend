@@ -127,6 +127,12 @@ export class VideoService {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
+
+  getVideoMetadataByUrl(uploadUrl: string): Observable<{ fileHash: string; fileSize: number; uploadUrl: string }> {
+    return this.http.get<{ fileHash: string; fileSize: number; uploadUrl: string }>(
+      `${this.baseUrl}/metadata-by-url?uploadUrl=${encodeURIComponent(uploadUrl)}`
+    );
+  }
   
 
   

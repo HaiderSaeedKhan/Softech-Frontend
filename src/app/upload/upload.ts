@@ -287,95 +287,61 @@ export class UploadComponent implements OnInit {
 
 
   // onSubmit(): void {
-  //   const { title, description, manualTags } = this.form.value;
-  
-  //   // ✅ Basic validation
-  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || this.manualTagsControls.length === 0) {
-  //     alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
-  //     return;
-  //   }
-  
-  //   // ✅ Filter non-empty manual tags and type them correctly
-  //   const tags: string[] = (manualTags as string[]).filter((tag: string) => tag?.trim().length > 0);
-
-  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
-  //     alert('All fields including title, description, file, and category must be filled. Include at least one tag.');
-  //     return; // 🔁 Prevent submission if any field is invalid
-  //   }
-  
-  //   // ✅ Create FormData for multipart/form-data submission
-  //   const formData = new FormData();
-  //   formData.append('title', title);
-  //   formData.append('description', description);
-  //   formData.append('categoryId', this.selectedCategoryId.toString());
-  //   formData.append('file', this.selectedFile);
-  
-  //   tags.forEach((tag: string) => {
-  //     formData.append('tags', tag);
-  //   });
-  
-  //   // ✅ Send to backend
-  //   this.videoService.uploadVideo(formData).subscribe({
-  //     next: () => {
-  //       alert('Video uploaded successfully!');
-  //       window.location.reload();
-  //       this.form.reset();
-  //       this.selectedFile = null;
-  //       this.selectedCategoryId = null;
-  //       this.tags = [];
-  //       this.selectedFile = null;
-  //     },
-  //     error: (err) => {
-  //       console.error('Upload failed:', err);
-  //       alert('Upload failed. Please try again.');
-  //     }
-  //   });
-  // }
-
-  // onSubmit(): void {
+  //   this.activeUploadType = 'main';
   //   const { title, description, manualTags } = this.form.value;
   //   const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
   
   //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
   //     alert('All fields must be filled.');
+  //     this.activeUploadType = null;
   //     return;
   //   }
   
   //   const fileName = `${Date.now()}_${this.selectedFile.name}`;
+  //   const metadata = {
+  //     title,
+  //     description,
+  //     categoryId: this.selectedCategoryId!,
+  //     tags,
+  //     uploadUrl: fileName // the backend generates full SAS URL from this
+  //   };
   
-  //   this.videoService.getSasUrl(fileName).subscribe({
+  //   this.videoService.saveMetadata(metadata).subscribe({
   //     next: async ({ uploadUrl }) => {
   //       try {
+  //         const hash = await this.videoService.calculateSHA256(this.selectedFile!);
+  //         localStorage.setItem(`video-hash-${uploadUrl.split('?')[0]}`, hash);
   //         await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
   //           console.log(`Progress: ${p}%`);
   //         });
   
-  //         const blobUrl = uploadUrl.split('?')[0]; // remove SAS query
-  //         const metadata = {
-  //           title,
-  //           description,
-  //           categoryId: this.selectedCategoryId!,
-  //           tags,
-  //           uploadUrl: blobUrl
-  //         };
+  //         // Get the clean blob URL (remove SAS token)
+  //         const blobUrl = uploadUrl.split('?')[0];
   
-  //         this.videoService.saveMetadata(metadata).subscribe({
+  //         // Confirm upload after all chunks are uploaded
+  //         this.videoService.confirmUpload(blobUrl).subscribe({
   //           next: () => {
   //             alert('Upload complete & metadata saved!');
   //             window.location.reload();
   //           },
-  //           error: () => alert('Upload succeeded but saving metadata failed.')
+  //           error: () => {
+  //             alert('Upload succeeded but confirmation failed.');
+  //             this.activeUploadType = null;
+  //           }
   //         });
   
   //       } catch (err) {
   //         console.error('Upload error:', err);
   //         alert('Video upload failed.');
+  //         this.activeUploadType = null;
   //       }
   //     },
-  //     error: () => alert('Could not get SAS upload URL')
+  //     error: () => {
+  //       alert('Saving metadata failed.');
+  //       this.activeUploadType = null;
+  //     }
   //   });
   // }
-
 
   onSubmit(): void {
     this.activeUploadType = 'main';
@@ -389,51 +355,118 @@ export class UploadComponent implements OnInit {
     }
   
     const fileName = `${Date.now()}_${this.selectedFile.name}`;
-    const metadata = {
-      title,
-      description,
-      categoryId: this.selectedCategoryId!,
-      tags,
-      uploadUrl: fileName // the backend generates full SAS URL from this
-    };
   
-    this.videoService.saveMetadata(metadata).subscribe({
-      next: async ({ uploadUrl }) => {
-        try {
-          const hash = await this.videoService.calculateSHA256(this.selectedFile!);
-          localStorage.setItem(`video-hash-${uploadUrl.split('?')[0]}`, hash);
-          await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
-            console.log(`Progress: ${p}%`);
-          });
+    this.videoService.calculateSHA256(this.selectedFile!).then(hash => {
+      const metadata = {
+        title,
+        description,
+        categoryId: this.selectedCategoryId!,
+        tags,
+        uploadUrl: fileName,
+        fileSize: this.selectedFile!.size,
+        fileHash: hash // ✅ Send hash to backend
+      };
   
-          // Get the clean blob URL (remove SAS token)
-          const blobUrl = uploadUrl.split('?')[0];
+      this.videoService.saveMetadata(metadata).subscribe({
+        next: async ({ uploadUrl }) => {
+          try {
+            await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
+              console.log(`Progress: ${p}%`);
+            });
   
-          // Confirm upload after all chunks are uploaded
-          this.videoService.confirmUpload(blobUrl).subscribe({
-            next: () => {
-              alert('Upload complete & metadata saved!');
-              window.location.reload();
-            },
-            error: () => {
-              alert('Upload succeeded but confirmation failed.');
-              this.activeUploadType = null;
-            }
-          });
+            const blobUrl = uploadUrl.split('?')[0];
+            this.videoService.confirmUpload(blobUrl).subscribe({
+              next: () => {
+                alert('Upload complete & metadata saved!');
+                window.location.reload();
+              },
+              error: () => {
+                alert('Upload succeeded but confirmation failed.');
+                this.activeUploadType = null;
+              }
+            });
   
-        } catch (err) {
-          console.error('Upload error:', err);
-          alert('Video upload failed.');
+          } catch (err) {
+            console.error('Upload error:', err);
+            alert('Video upload failed.');
+            this.activeUploadType = null;
+          }
+        },
+        error: () => {
+          alert('Saving metadata failed.');
           this.activeUploadType = null;
         }
-      },
-      error: () => {
-        alert('Saving metadata failed.');
-        this.activeUploadType = null;
-      }
+      });
     });
   }
   
+  
+  // resumeUpload(video: any): void {
+  //   this.activeUploadType = video.id ?? video.uploadUrl;
+  //   const input = document.createElement('input');
+  //   input.type = 'file';
+  //   input.accept = 'video/*';
+  
+  //   input.onchange = async () => {
+  //     const file = input.files?.[0];
+  //     if (!file) {this.activeUploadType = null; return; } 
+
+  //   const currentHash = await this.videoService.calculateSHA256(file);
+  //   const savedHash = localStorage.getItem(`video-hash-${video.uploadUrl}`);
+
+  //   if (savedHash && savedHash !== currentHash) {
+  //     alert('⚠️ Selected file is different from the original upload. Resume aborted.');
+  //     this.activeUploadType = null;
+  //     return;
+  //   }
+
+  //   // If no hash was saved (older uploads), save it now
+  //   if (!savedHash) {
+  //     localStorage.setItem(`video-hash-${video.uploadUrl}`, currentHash);
+  //   }
+  
+  //     this.videoService.getUploadedBlockCount(video.uploadUrl).subscribe({
+  //       next: ({ uploadedBlockCount }) => {
+  //         // Validate file size
+  //         if (file.size < uploadedBlockCount * 1024 * 1024) {
+  //           alert('Selected file is smaller than the uploaded size.');
+  //           this.activeUploadType = null;
+  //           return;
+  //         }
+  
+  //         const fileNameOnly = video.uploadUrl.split('/').pop()!;
+  //         console.log(fileNameOnly)
+  //         this.videoService.getSasUrl(fileNameOnly).subscribe({
+  //           next: async ({ uploadUrl }) => {
+  //             try {
+  //               await this.videoService.uploadFileToBlobTwo(
+  //                 file,
+  //                 uploadUrl,
+  //                 video.uploadUrl,
+  //                 (p) => console.log(`Resuming upload: ${p}%`),
+  //                 uploadedBlockCount // ✅ Pass correct offset
+  //               );
+  
+  //               this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
+  //                 alert('Upload resumed and completed!');
+  //                 window.location.reload();
+  //               });
+  //             } catch (err) {
+  //               console.error('Resume failed', err);
+  //               alert('Resuming upload failed.');
+  //               this.activeUploadType = null;
+  //             }
+  //           },
+  //           error: () => {alert('Failed to get upload URL.'),this.activeUploadType = null;}
+  //         });
+  //       },
+  //       error: () => {alert('Could not fetch uploaded block count.'),this.activeUploadType = null;}
+  //     });
+  //   };
+  
+  //   input.click(); // 👈 Trigger file picker
+  // }
+
   resumeUpload(video: any): void {
     this.activeUploadType = video.id ?? video.uploadUrl;
     const input = document.createElement('input');
@@ -442,63 +475,74 @@ export class UploadComponent implements OnInit {
   
     input.onchange = async () => {
       const file = input.files?.[0];
-      if (!file) {this.activeUploadType = null; return; } 
-
-    const currentHash = await this.videoService.calculateSHA256(file);
-    const savedHash = localStorage.getItem(`video-hash-${video.uploadUrl}`);
-
-    if (savedHash && savedHash !== currentHash) {
-      alert('⚠️ Selected file is different from the original upload. Resume aborted.');
-      this.activeUploadType = null;
-      return;
-    }
-
-    // If no hash was saved (older uploads), save it now
-    if (!savedHash) {
-      localStorage.setItem(`video-hash-${video.uploadUrl}`, currentHash);
-    }
+      if (!file) {
+        this.activeUploadType = null;
+        return;
+      }
   
-      this.videoService.getUploadedBlockCount(video.uploadUrl).subscribe({
-        next: ({ uploadedBlockCount }) => {
-          // Validate file size
-          if (file.size < uploadedBlockCount * 1024 * 1024) {
-            alert('Selected file is smaller than the uploaded size.');
+      // ✅ Get backend-stored hash
+      this.videoService.getVideoMetadataByUrl(video.uploadUrl).subscribe({
+        next: async (metadata) => {
+          const currentHash = await this.videoService.calculateSHA256(file);
+  
+          if (metadata.fileHash && metadata.fileHash !== currentHash) {
+            alert('⚠️ Selected file is different from the original upload. Resume aborted.');
             this.activeUploadType = null;
             return;
           }
   
-          const fileNameOnly = video.uploadUrl.split('/').pop()!;
-          console.log(fileNameOnly)
-          this.videoService.getSasUrl(fileNameOnly).subscribe({
-            next: async ({ uploadUrl }) => {
-              try {
-                await this.videoService.uploadFileToBlobTwo(
-                  file,
-                  uploadUrl,
-                  video.uploadUrl,
-                  (p) => console.log(`Resuming upload: ${p}%`),
-                  uploadedBlockCount // ✅ Pass correct offset
-                );
-  
-                this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
-                  alert('Upload resumed and completed!');
-                  window.location.reload();
-                });
-              } catch (err) {
-                console.error('Resume failed', err);
-                alert('Resuming upload failed.');
+          this.videoService.getUploadedBlockCount(video.uploadUrl).subscribe({
+            next: ({ uploadedBlockCount }) => {
+              if (file.size < uploadedBlockCount * 1024 * 1024) {
+                alert('Selected file is smaller than the uploaded size.');
                 this.activeUploadType = null;
+                return;
               }
+  
+              const fileNameOnly = video.uploadUrl.split('/').pop()!;
+              this.videoService.getSasUrl(fileNameOnly).subscribe({
+                next: async ({ uploadUrl }) => {
+                  try {
+                    await this.videoService.uploadFileToBlobTwo(
+                      file,
+                      uploadUrl,
+                      video.uploadUrl,
+                      (p) => console.log(`Resuming upload: ${p}%`),
+                      uploadedBlockCount
+                    );
+  
+                    this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
+                      alert('Upload resumed and completed!');
+                      window.location.reload();
+                    });
+                  } catch (err) {
+                    console.error('Resume failed', err);
+                    alert('Resuming upload failed.');
+                    this.activeUploadType = null;
+                  }
+                },
+                error: () => {
+                  alert('Failed to get upload URL.');
+                  this.activeUploadType = null;
+                }
+              });
             },
-            error: () => {alert('Failed to get upload URL.'),this.activeUploadType = null;}
+            error: () => {
+              alert('Could not fetch uploaded block count.');
+              this.activeUploadType = null;
+            }
           });
         },
-        error: () => {alert('Could not fetch uploaded block count.'),this.activeUploadType = null;}
+        error: () => {
+          alert('Could not fetch saved metadata for hash check.');
+          this.activeUploadType = null;
+        }
       });
     };
   
-    input.click(); // 👈 Trigger file picker
+    input.click();
   }
+  
 
 
   
