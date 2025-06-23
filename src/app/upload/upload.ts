@@ -168,6 +168,8 @@ import { Header } from '../shared/header/header';
 import { VideoService } from '../services/video'; // ✅ new import
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { browserRefresh } from '../app';
+
 interface FlatCategoryNode {
   id: number;
   name: string;
@@ -201,7 +203,10 @@ export class UploadComponent implements OnInit {
   resumableUploads: any[] = [];
 
   isUploading: boolean = false;
-  activeUploadType: 'main' | number | null = null;
+  // activeUploadType: 'main' | number | null = null;
+
+  activeUploadTypeAnother: 'main' | string | null = null; // shared active upload
+  resumeUsed = false;                    // indicates if resume clicked under SPA navigation
 
   // ✅ category tree logic
   selectedCategoryId: number | null = null;
@@ -243,9 +248,39 @@ export class UploadComponent implements OnInit {
       this.dataSource.data = tree;
     });
 
+    // this.videoService.getResumableUploads().subscribe(videos => {
+    //   this.resumableUploads = videos;
+    // });
+
     this.videoService.getResumableUploads().subscribe(videos => {
       this.resumableUploads = videos;
+
+      if (browserRefresh) {
+        // 🔑 If full reload/new tab, clear stale cross-tab active state
+        this.videoService.setActiveUpload(null);
+        this.activeUploadTypeAnother = null;
+        this.resumeUsed = false;
+      } else {
+        // SPA navigation: respect ongoing upload
+        this.activeUploadTypeAnother = this.videoService.getActiveUpload();
+        this.resumeUsed = !!this.activeUploadTypeAnother;
+      }
     });
+  }
+
+  onResumeClick(video: any): void {
+    const url = video.uploadUrl;
+    this.resumeUsed = true;
+    this.activeUploadTypeAnother = url;
+    this.videoService.setActiveUpload(url); // persist across tabs
+    this.resumeUpload(video);
+  }
+
+  private onUploadComplete(): void {
+    // Clear state both locally and across tabs
+    this.videoService.setActiveUpload(null);
+    this.resumeUsed = false;
+    this.activeUploadTypeAnother = null;
   }
 
   // ✅ tag form helpers
@@ -344,13 +379,17 @@ export class UploadComponent implements OnInit {
   // }
 
   onSubmit(): void {
-    this.activeUploadType = 'main';
+    this.activeUploadTypeAnother = 'main'; // 🚀 Mark main upload in progress
+    this.videoService.setActiveUpload('main'); // 🌟 Persist across tabs
+    // this.activeUploadType = 'main';
     const { title, description, manualTags } = this.form.value;
     const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
   
     if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
       alert('All fields must be filled.');
-      this.activeUploadType = null;
+      this.activeUploadTypeAnother = null;
+      this.videoService.setActiveUpload(null);
+      // this.activeUploadType = null;
       return;
     }
   
@@ -378,23 +417,30 @@ export class UploadComponent implements OnInit {
             this.videoService.confirmUpload(blobUrl).subscribe({
               next: () => {
                 alert('Upload complete & metadata saved!');
+                this.onUploadComplete(); // 🌟 Clear cross-tab + local state
                 window.location.reload();
               },
               error: () => {
                 alert('Upload succeeded but confirmation failed.');
-                this.activeUploadType = null;
+                this.activeUploadTypeAnother = null;
+                this.videoService.setActiveUpload(null);
+                // this.activeUploadType = null;
               }
             });
   
           } catch (err) {
             console.error('Upload error:', err);
             alert('Video upload failed.');
-            this.activeUploadType = null;
+            this.activeUploadTypeAnother = null;
+            this.videoService.setActiveUpload(null); // ❗ Clear cross-tab state
+            // this.activeUploadType = null;
           }
         },
         error: () => {
           alert('Saving metadata failed.');
-          this.activeUploadType = null;
+          this.activeUploadTypeAnother = null;
+          this.videoService.setActiveUpload(null); // ❗ Clear cross-tab state
+          // this.activeUploadType = null;
         }
       });
     });
@@ -468,7 +514,11 @@ export class UploadComponent implements OnInit {
   // }
 
   resumeUpload(video: any): void {
-    this.activeUploadType = video.id ?? video.uploadUrl;
+    // this.activeUploadType = video.id ?? video.uploadUrl;
+    const url = video.uploadUrl;
+    this.activeUploadTypeAnother = url; // 💡 Use URL string consistently
+    this.videoService.setActiveUpload(url); // 🌟 Mark as active across tabs
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'video/*';
@@ -476,7 +526,9 @@ export class UploadComponent implements OnInit {
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) {
-        this.activeUploadType = null;
+        // this.activeUploadType = null;
+        this.activeUploadTypeAnother = null;
+        this.videoService.setActiveUpload(null); // ❗ Clear on cancel
         return;
       }
   
@@ -487,7 +539,9 @@ export class UploadComponent implements OnInit {
   
           if (metadata.fileHash && metadata.fileHash !== currentHash) {
             alert('⚠️ Selected file is different from the original upload. Resume aborted.');
-            this.activeUploadType = null;
+            this.activeUploadTypeAnother = null;
+            this.videoService.setActiveUpload(null); // ❗ Clear on hash mismatch
+            // this.activeUploadType = null;
             return;
           }
   
@@ -495,7 +549,9 @@ export class UploadComponent implements OnInit {
             next: ({ uploadedBlockCount }) => {
               if (file.size < uploadedBlockCount * 1024 * 1024) {
                 alert('Selected file is smaller than the uploaded size.');
-                this.activeUploadType = null;
+                // this.activeUploadType = null;
+                this.activeUploadTypeAnother = null;
+                this.videoService.setActiveUpload(null); // ❗ Clear on invalid size
                 return;
               }
   
@@ -513,29 +569,38 @@ export class UploadComponent implements OnInit {
   
                     this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
                       alert('Upload resumed and completed!');
+                      this.onUploadComplete(); // 🌟 Reset local + cross-tab state
                       window.location.reload();
                     });
                   } catch (err) {
                     console.error('Resume failed', err);
                     alert('Resuming upload failed.');
-                    this.activeUploadType = null;
+                    this.activeUploadTypeAnother = null;
+                    this.videoService.setActiveUpload(null); // ❗ Clear on failure
+                    // this.activeUploadType = null;
                   }
                 },
                 error: () => {
                   alert('Failed to get upload URL.');
-                  this.activeUploadType = null;
+                  // this.activeUploadType = null;
+                  this.activeUploadTypeAnother = null;
+                  this.videoService.setActiveUpload(null); // ❗ Clear on failure
                 }
               });
             },
             error: () => {
               alert('Could not fetch uploaded block count.');
-              this.activeUploadType = null;
+              // this.activeUploadType = null;
+              this.activeUploadTypeAnother = null;
+              this.videoService.setActiveUpload(null); // ❗ Clear on failure
             }
           });
         },
         error: () => {
           alert('Could not fetch saved metadata for hash check.');
-          this.activeUploadType = null;
+          // this.activeUploadType = null;
+          this.activeUploadTypeAnother = null;
+          this.videoService.setActiveUpload(null); // ❗ Clear on failure
         }
       });
     };

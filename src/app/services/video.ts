@@ -133,6 +133,19 @@ export class VideoService {
       `${this.baseUrl}/metadata-by-url?uploadUrl=${encodeURIComponent(uploadUrl)}`
     );
   }
+
+  setActiveUpload(uploadUrl: string | null): void {
+    if (uploadUrl) {
+      localStorage.setItem('activeUpload', uploadUrl);
+    } else {
+      localStorage.removeItem('activeUpload');
+    }
+  }
+
+  /** Retrieve current active upload URL */
+  getActiveUpload(): string | null {
+    return localStorage.getItem('activeUpload');
+  }
   
 
   

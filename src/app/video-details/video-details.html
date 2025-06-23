@@ -148,7 +148,7 @@
       <div class="metadata-row"><strong>Category:</strong> {{ entry.oldMetadata?.CategoryName }}</div>
       <div class="metadata-row">
         <strong>Tags:</strong>
-        <span class="tag" *ngFor="let tag of current?.tags">{{ tag }}</span>
+        <span class="tag" *ngFor="let tag of entry.oldMetadata?.Tags">{{ tag }}</span>
       </div>
       
     </div>

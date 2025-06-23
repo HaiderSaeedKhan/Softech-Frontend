@@ -199,9 +199,9 @@
           <!-- <button mat-raised-button color="accent" type="button" (click)="onSubmit()">Submit Video</button> -->
           <button mat-raised-button color="accent" type="button"
                   (click)="onSubmit()"
-                  [disabled]="activeUploadType !== null">
-            <mat-progress-spinner *ngIf="activeUploadType === 'main'" diameter="20" mode="indeterminate"></mat-progress-spinner>
-            <span *ngIf="activeUploadType !== 'main'">Submit Video</span>
+                  [disabled]="activeUploadTypeAnother !== null">
+            <mat-progress-spinner *ngIf="activeUploadTypeAnother === 'main'" diameter="20" mode="indeterminate"></mat-progress-spinner>
+            <span *ngIf="activeUploadTypeAnother !== 'main'">Submit Video</span>
           </button>    
         </div>
       </form>
@@ -217,9 +217,9 @@
         <!-- <button mat-stroked-button color="primary" (click)="resumeUpload(vid)">Resume</button> -->
         <button mat-stroked-button color="primary"
         (click)="resumeUpload(vid)"
-        [disabled]="activeUploadType !== null && activeUploadType !== vid.uploadUrl">
-          <mat-progress-spinner *ngIf="activeUploadType === vid.uploadUrl" diameter="20" mode="indeterminate"></mat-progress-spinner>
-          <span *ngIf="activeUploadType !== vid.uploadUrl">Resume</span>
+        [disabled]="activeUploadTypeAnother !== null && activeUploadTypeAnother !== vid.uploadUrl">
+          <mat-progress-spinner *ngIf="activeUploadTypeAnother === vid.uploadUrl" diameter="20" mode="indeterminate"></mat-progress-spinner>
+          <span *ngIf="activeUploadTypeAnother !== vid.uploadUrl">Resume</span>
         </button>
       </div>
     </div>
