@@ -1,0 +1,99 @@
+sequenceDiagram
+    participant Client
+    participant VideoController
+    participant IVideoService
+    participant VideoService
+    participant IVideoRepository
+    participant VideoRepository
+    participant ITagRepository
+    participant TagRepository
+    participant IMetadataAuditLogRepository
+    participant MetadataAuditLogRepository
+    participant ISearchService
+    participant SearchService
+    participant AppDbContext
+    participant Elasticsearch
+
+    Client->>+VideoController: UpdateVideo(id, UpdateVideoDto)
+    VideoController->>+IVideoService: UpdateVideoAsync(id, userId, dto)
+    IVideoService->>+VideoService: UpdateVideoAsync(id, userId, dto)
+
+    VideoService->>+IVideoRepository: GetByIdWithTagsAsync(id, userId)
+    IVideoRepository->>+VideoRepository: GetByIdWithTagsAsync(id, userId)
+    VideoRepository->>+AppDbContext: Query video + tags
+    AppDbContext-->>-VideoRepository: Video entity
+    VideoRepository-->>-IVideoRepository: Video entity
+    IVideoRepository-->>-VideoService: Video entity
+
+    alt Video returned is null
+        VideoService-->>IVideoService: false
+        IVideoService-->>VideoController: false
+        VideoController-->>Client: NotFound("Video not found or unauthorized.")
+    else Video found
+        VideoService->>+ITagRepository: GetByNamesAsync(newTags)
+        ITagRepository->>+TagRepository: GetByNamesAsync(newTags)
+        TagRepository->>+AppDbContext: GetByNamesAsync(newTags)
+        AppDbContext-->>-TagRepository: existing tags
+        TagRepository-->>-ITagRepository: existing tags
+        ITagRepository-->>-VideoService: existing tags
+
+        loop for each missing tag
+            VideoService->>+ITagRepository: AddAsync(new Tag)
+            ITagRepository->>+TagRepository: AddAsync(new Tag)
+            TagRepository->>+AppDbContext: Tags.AddAsync(new Tag)
+            AppDbContext-->>-TagRepository: done
+            TagRepository-->>-ITagRepository: done
+            ITagRepository-->>-VideoService: done
+            %% ITagRepository->>+TagRepository: SaveChangesAsync()
+            %% TagRepository->>+AppDbContext: SaveChangesAsync()
+            %% AppDbContext-->>-TagRepository: done
+            %% TagRepository-->>-ITagRepository: done
+        end
+
+        VideoService->>+IMetadataAuditLogRepository: AddAsync(old, new)
+        IMetadataAuditLogRepository->>+MetadataAuditLogRepository: AddAsync(MetadataAuditLog)
+        MetadataAuditLogRepository->>+AppDbContext: Add row for log
+        AppDbContext-->>-MetadataAuditLogRepository: done
+        MetadataAuditLogRepository-->>-IMetadataAuditLogRepository: done
+        IMetadataAuditLogRepository-->>-VideoService: done
+
+        VideoService->>+IVideoRepository: Update(video)
+        IVideoRepository->>+VideoRepository: Update(video)
+        VideoRepository->>+AppDbContext: Update(video)
+        AppDbContext-->>-VideoRepository:done
+        VideoRepository-->>-IVideoRepository: done
+        IVideoRepository-->>-VideoService: done
+
+        VideoService->>+IVideoRepository: SaveChangesAsync()
+        IVideoRepository->>+VideoRepository: SaveChangesAsync()
+        VideoRepository->>+AppDbContext: SaveChangesAsync()
+        AppDbContext-->>-VideoRepository: done
+        VideoRepository-->>-IVideoRepository: done
+        IVideoRepository-->>-VideoService: done
+
+        VideoService->>+ITagRepository: SaveChangesAsync()
+        ITagRepository->>+TagRepository: SaveChangesAsync()
+        TagRepository->>+AppDbContext: SaveChangesAsync()
+        AppDbContext-->>-TagRepository: done
+        TagRepository-->>-ITagRepository: done
+        ITagRepository-->>-VideoService: done
+
+        VideoService->>+IMetadataAuditLogRepository: SaveChangesAsync()
+        IMetadataAuditLogRepository->>+MetadataAuditLogRepository: SaveChangesAsync()
+        MetadataAuditLogRepository->>+AppDbContext: SaveChangesAsync()
+        AppDbContext-->>-MetadataAuditLogRepository: done
+        MetadataAuditLogRepository-->>-IMetadataAuditLogRepository: done
+        IMetadataAuditLogRepository-->>-VideoService: done
+
+        VideoService->>+ISearchService: IndexVideoAsync(video)
+        ISearchService->>+SearchService: IndexVideoAsync(video)
+        SearchService->>SearchService: GeneratePhrases(Description)
+        SearchService->>+Elasticsearch: IndexDocument(VideoSearchDocument)
+        Elasticsearch-->>-SearchService: done
+        SearchService-->>-ISearchService: done
+        ISearchService-->>-VideoService: done
+
+        VideoService-->>IVideoService: true
+        IVideoRepository-->>VideoController: true
+        VideoController-->>Client: Ok({ message: "Updated successfully." })
+    end

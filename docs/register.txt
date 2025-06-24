@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant Client
+    participant AuthController
+    participant IUserService
+    participant UserService
+    participant IUserRepository
+    participant UserRepository
+    participant AppDbContext
+
+    Client->>+AuthController: Register(RegisterUserDto)
+    AuthController->>+IUserService: RegisterAsync(dto)
+    IUserService->>+UserService: RegisterAsync(dto)
+    UserService->>+IUserRepository: ExistsByEmailAsync(dto.Email)
+    IUserRepository->>+UserRepository: ExistsByEmailAsync(dto.Email)
+    UserRepository->>+AppDbContext: Users.AnyAsync(u => u.Email == dto.Email)
+    AppDbContext-->>-UserRepository: bool
+    UserRepository-->>-IUserRepository: bool
+    IUserRepository-->>-UserService: bool
+
+    alt New Email
+        UserService->>UserService: HashPassword(dto.Password)
+        UserService->>+IUserRepository: AddAsync(User)
+        IUserRepository->>+UserRepository: AddAsync(User)
+        UserRepository->>+AppDbContext: Users.AddAsync(User)
+        AppDbContext-->>-UserRepository: void
+        UserRepository-->>-IUserRepository: void
+        IUserRepository-->>-UserService: void
+
+        UserService->>+IUserRepository: SaveChangesAsync()
+        IUserRepository->>+UserRepository: SaveChangesAsync()
+        UserRepository->>+AppDbContext: SaveChangesAsync()
+        AppDbContext-->>-UserRepository: void
+        UserRepository-->>-IUserRepository: void
+        IUserRepository-->>-UserService: void
+
+        UserService-->>AuthController: true
+        AuthController-->>Client: Ok({ message: "Registered successfully." })  
+    else Email exists
+    UserService-->>-UserService: false
+        UserService-->>AuthController: false
+        AuthController-->>Client: Conflict("User already exists.")
+        
+    end

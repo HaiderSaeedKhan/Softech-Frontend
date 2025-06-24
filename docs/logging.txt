@@ -1,0 +1,131 @@
+sequenceDiagram
+    participant Client as Frontend
+    participant API as API Controller
+    participant MW as ApiAuditLoggingMiddleware
+    participant SVC as Service Layer
+    participant EF as EF Interceptor (DB SaveChanges)
+    participant Search as SearchService
+    participant TagAI as TagSuggestionService
+    participant MQ as AuditLoggerRabbitMq (Producer)
+    participant RabbitMQ as RabbitMQ Exchange
+    participant Consumer as AuditLogConsumerService
+    participant DB as AppDbContext (ApplicationLogs)
+
+    %% API call logging
+    Client->>API: Any API request
+    API->>MW: Middleware logs API call
+    MW->>MQ: LogAsync(ApiEndpointCall)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% DB change logging
+    API->>SVC: Call service logic
+    SVC->>EF: SaveChanges triggers interceptor
+    EF->>MQ: LogAsync(DatabaseAccess)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% SearchService logging
+    SVC->>Search: Search / Suggest / Index
+    Search->>MQ: LogAsync(ElasticsearchSearch / Suggest / FilteredSearch)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% TagSuggestionService logging
+    SVC->>TagAI: SuggestTagsAsync
+    TagAI->>MQ: LogAsync(OpenAITagSuggestion)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% Consumer saves log to DB
+    RabbitMQ->>Consumer: Deliver(AuditEvent)
+    Consumer->>DB: INSERT INTO ApplicationLogs
+
+
+sequenceDiagram
+    participant Client as Frontend
+    participant API as API Controller
+    participant MW as ApiAuditLoggingMiddleware
+    participant SVC as Service Layer
+    participant EF as EF Interceptor (DB SaveChanges)
+    participant Search as SearchService
+    participant TagAI as TagSuggestionService
+    participant IAuditLogger as IAuditLogger
+    participant MQ as AuditLoggerRabbitMq (Producer)
+    participant RabbitMQ as RabbitMQ Exchange
+    participant Consumer as AuditLogConsumerService
+    participant DB as AppDbContext (ApplicationLogs)
+    
+
+    %% API call logging
+    Client->>API: Any API request
+    API->>MW: Middleware logs API call
+    MW->>IAuditLogger: LogAsync(ApiEndpointCall)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: 
+
+    %% DB change logging
+    API->>SVC: Call service logic
+    SVC->>EF: SaveChanges triggers interceptor
+    EF->>IAuditLogger: LogAsync(DatabaseAccess)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: 
+
+    %% SearchService logging
+    SVC->>Search: Search / Suggest / Index
+    Search->>IAuditLogger: LogAsync(ElasticsearchSearch / Suggest / FilteredSearch)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: 
+
+    %% TagSuggestionService logging
+    SVC->>TagAI: SuggestTagsAsync
+    TagAI->>IAuditLogger: LogAsync(OpenAITagSuggestion)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: 
+
+    %% Consumer saves log to DB
+    RabbitMQ->>Consumer: Deliver(AuditEvent)
+    Consumer->>DB: INSERT INTO ApplicationLogs
+
+
+
+sequenceDiagram
+    participant Client as Frontend
+    participant API as API Controller
+    participant MW as ApiAuditLoggingMiddleware
+    participant SVC as Service Layer
+    participant EF as EF Interceptor (DB SaveChanges)
+    participant Search as SearchService
+    participant TagAI as TagSuggestionService
+    participant IAuditLogger as IAuditLogger
+    participant MQ as AuditLoggerRabbitMq (Producer)
+    participant RabbitMQ as RabbitMQ Exchange
+    participant Consumer as AuditLogConsumerService
+    participant DB as AppDbContext (ApplicationLogs)
+    
+
+    %% API call logging
+    Client->>API: Any API request
+    API->>MW: Middleware logs API call
+    MW->>IAuditLogger: LogAsync(ApiEndpointCall)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% DB change logging
+    API->>SVC: Call service logic
+    SVC->>EF: SaveChanges triggers interceptor
+    EF->>IAuditLogger: LogAsync(DatabaseAccess)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% SearchService logging
+    SVC->>Search: Search / Suggest / Index
+    Search->>IAuditLogger: LogAsync(ElasticsearchSearch / Suggest / FilteredSearch)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% TagSuggestionService logging
+    SVC->>TagAI: SuggestTagsAsync
+    TagAI->>IAuditLogger: LogAsync(OpenAITagSuggestion)
+    IAuditLogger->>MQ: Publish(AuditEvent)
+    MQ->>RabbitMQ: Publish(AuditEvent)
+
+    %% Consumer saves log to DB
+    RabbitMQ->>Consumer: Deliver(AuditEvent)
+    Consumer->>DB: INSERT INTO ApplicationLogs

@@ -1,0 +1,71 @@
+sequenceDiagram
+    %% === FRONTEND ===
+    participant F as Frontend (Angular/React)
+    participant FVS as VideoService.ts
+
+    %% === API ===
+    participant VC as VideoController (API)
+
+    %% === SERVICE ===
+    participant IVS as IVideoService
+    participant VS as VideoService (Impl)
+
+    %% === REPOSITORIES ===
+    participant IVR as IVideoRepository
+    participant VR as VideoRepository
+
+    %% === INFRA ===
+    participant BLOB as Azure Blob Storage
+    participant ISearchService as ISearchService
+    participant SearchService as SearchService
+    participant Elasticsearch as Elasticsearch
+    participant DB as AppDbContext
+
+    %% === FLOW ===
+    F->>FVS: deleteVideo(id)
+    FVS->>VC: DELETE /api/video/{id}
+    VC->>IVS: DeleteVideoAsync(id, userId)
+    IVS->>VS: DeleteVideoAsync(id, userId)
+
+    VS->>IVR: GetByIdWithTagsAndCategoryAsync(id)
+    IVR->>VR: GetByIdWithTagsAndCategoryAsync(id)
+    VR->>DB: SELECT Video JOIN Tags + Category
+    DB-->>VR: Video or null
+    VR-->>IVR: Video or null
+    IVR-->>VS: Video or null
+
+    alt video found and owned by user
+        VS->>BLOB: DeleteIfExistsAsync(blobName)
+        BLOB-->>VS: success/failure
+
+        VS->>ISearchService: DeleteVideoIndexAsync(video.Id)
+        ISearchService->>SearchService: DeleteVideoIndexAsync(video.Id)
+        SearchService->>Elasticsearch: DELETE document
+        Elasticsearch-->>SearchService: success
+        SearchService-->>ISearchService: done
+        ISearchService-->>VS: done
+
+        VS->>IVR: Delete(video)
+        IVR->>VR: Delete
+        VR->>DB: DELETE Video (cascade VideoTags + AuditLogs)
+        DB-->>VR: done
+        VR-->>IVR: done
+        IVR-->>VS: done
+
+        VS->>IVR: SaveChangesAsync()
+        IVR->>VR: SaveChangesAsync()
+        VR->>DB: SaveChanges()
+        DB-->>VR: done
+        VR-->>IVR: done
+        IVR-->>VS: done
+
+        VS-->>IVS: true
+        IVS-->>VC: Ok
+        VC-->>FVS: Ok
+        FVS-->>F: Ok
+    else video not found or unauthorized
+        VS-->>IVS: false
+        IVS-->>VC: NotFound
+        VC-->>FVS: NotFound
+        FVS-->>F: NotFound
+    end

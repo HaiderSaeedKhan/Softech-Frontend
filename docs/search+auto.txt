@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Client
+    participant SearchController
+    participant ISearchService
+    participant SearchService
+    participant IElasticClient
+    participant Elasticsearch
+loop
+    %% AUTOCOMPLETE FLOW
+    Client->>+SearchController: Autocomplete(prefix)
+    SearchController->>+ISearchService: SuggestAsync(prefix)
+    ISearchService->>+SearchService: SuggestAsync(prefix)
+    SearchService->>+IElasticClient: SearchAsync (suggest query)
+    IElasticClient->>+Elasticsearch: suggest query
+    Elasticsearch-->>-IElasticClient: suggest results
+    IElasticClient-->>-SearchService: suggest results
+    SearchService-->>-ISearchService: List<string>
+    ISearchService-->>-SearchController: List<string>
+    SearchController-->>Client: Ok(List<string>)
+end
+    %% FILTERED SEARCH FLOW
+    Client->>+SearchController: FilteredSearch(dto)
+    SearchController->>+ISearchService: SearchAsync(dto.Query, 1000, dto.CategoryIds, userId)
+    ISearchService->>+SearchService: SearchAsync(dto.Query, 1000, dto.CategoryIds, userId)
+    SearchService->>+IElasticClient: SearchAsync (multi-match + filters)
+    IElasticClient->>+Elasticsearch: filtered search query
+    Elasticsearch-->>-IElasticClient: search results
+    IElasticClient-->>-SearchService: search results
+    SearchService-->>-ISearchService: (hits, highlights)
+    ISearchService-->>-SearchController: (hits, highlights)
+    SearchController-->>Client: Ok(hits, highlights)

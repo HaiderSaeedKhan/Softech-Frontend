@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant UI as Login Page
+    participant AuthController
+    participant IUserService
+    participant UserService
+    participant IJwtService
+    participant JwtService
+    participant IUserRepository
+    participant UserRepository
+    participant DB as AppDbContext
+
+    UI->>AuthController: POST /api/auth/login(LoginDto)
+    AuthController->>IUserService: LoginAsync(dto)
+    IUserService->>UserService: LoginAsync(dto)
+    UserService ->> IUserRepository: GetByEmailAsync(dto.Email)
+    IUserRepository ->> UserRepository: GetByEmailAsync(dto.Email)
+    UserRepository ->> DB: FirstOrDefaultAsync(u => u.Email == email)
+    DB -->> UserRepository: Return User
+    UserRepository -->> IUserRepository: Return User
+    IUserRepository -->> UserService: Return User
+
+    UserService-->>IUserService: Return User
+    IUserService-->>AuthController: Return User
+
+    AuthController->>IJwtService: GenerateToken(user)
+    IJwtService->>JwtService: GenerateToken(user)
+    JwtService-->>IJwtService: JWT string
+    IJwtService-->>AuthController: JWT string
+    AuthController-->>UI: Return JWT token
