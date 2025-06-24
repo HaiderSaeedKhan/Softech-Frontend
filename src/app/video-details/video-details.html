@@ -119,6 +119,11 @@
     style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); max-width: 100%;">
     Your browser does not support the video tag.
   </video>
+  <div *ngIf="isOwner" style="margin-top: 1rem;">
+    <button class="delete-video-btn" (click)="onDelete()">
+      <mat-icon>delete</mat-icon> Delete Video
+    </button>
+  </div>
 </div>
 <div class="details-container">
   <h1 class="page-title">Video Metadata</h1>

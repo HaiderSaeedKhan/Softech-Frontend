@@ -167,4 +167,21 @@
     font-weight: 600;
     font-size: 1rem;
   }
-  
+  /* 🔹 ADDED: Delete Video button style */
+.delete-video-btn {
+  background-color: #e53935;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background-color 0.3s ease;
+}
+
+.delete-video-btn:hover {
+  background-color: #c62828;
+}

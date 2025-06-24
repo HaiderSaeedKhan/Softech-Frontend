@@ -110,7 +110,12 @@
 </div> -->
 
 <app-header />
-
+<mat-progress-bar
+  *ngIf="progress > 0"
+  mode="determinate"
+  [value]="progress"
+  style="position: sticky; top: 0; z-index: 1000;">
+</mat-progress-bar>
 <div class="page-container">
   <!-- Upload Form Card -->
   <div class="left-panel">
@@ -213,7 +218,7 @@
     <div class="resume-card">
       <h2>Resumable Uploads</h2>
       <div *ngFor="let vid of resumableUploads" class="resume-item">
-        <p><strong>{{ vid.title }}</strong><br /><small>{{ vid.uploadedBlockCount }} blocks uploaded</small></p>
+        <p><strong>{{ vid.title }}</strong><br /><small>{{ vid.uploadedBlockCount }} MB uploaded</small></p>
         <!-- <button mat-stroked-button color="primary" (click)="resumeUpload(vid)">Resume</button> -->
         <button mat-stroked-button color="primary"
         (click)="resumeUpload(vid)"

@@ -455,4 +455,18 @@ export class VideoDetailsComponent implements OnInit {
       return null;
     }
   }
+  onDelete(): void {
+    if (confirm('Are you sure you want to delete this video?')) {
+      this.videoService.deleteVideo(this.videoId).subscribe({
+        next: () => {
+          alert('Video deleted successfully.');
+          this.router.navigate(['/search']);
+        },
+        error: () => {
+          alert('Failed to delete video.');
+        }
+      });
+    }
+  }
+  
 }

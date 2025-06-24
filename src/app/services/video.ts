@@ -3,10 +3,12 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { BlockBlobClient } from '@azure/storage-blob';
 import { lastValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class VideoService {
   private baseUrl = 'http://localhost:5099/api/video';
+  public uploadProgress$ = new BehaviorSubject<number>(0);
 
   constructor(private http: HttpClient) {}
 
@@ -48,9 +50,12 @@ export class VideoService {
       const fullUrl = sasUrl.split('?')[0];
       await lastValueFrom(this.trackBlock(fullUrl, i + 1));
       onProgress(Math.round(((i + 1) / totalBlocks) * 100));
+      const progress = Math.round(((i + 1) / totalBlocks) * 100);
+      this.uploadProgress$.next(progress); // ✅ Emit progress
     }
 
     await blockBlobClient.commitBlockList(blockIds);
+    this.uploadProgress$.next(0); // ✅ Reset on complete
   }
 
   saveMetadata(data: {
@@ -115,10 +120,13 @@ export class VideoService {
       await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
       await lastValueFrom(this.trackBlock(uploadUrl, i + 1));
       onProgress(Math.round(((i + 1) / totalBlocks) * 100));
+      const progress = Math.round(((i + 1) / totalBlocks) * 100);
+      this.uploadProgress$.next(progress); // ✅ Emit progress
     }
   
     // ✅ Commit full block list (not just the ones uploaded in this session)
     await blockBlobClient.commitBlockList(blockIds);
+    this.uploadProgress$.next(0); // ✅ Reset on complete
   }
 
   async calculateSHA256(file: File): Promise<string> {
@@ -147,7 +155,10 @@ export class VideoService {
     return localStorage.getItem('activeUpload');
   }
   
-
+  deleteVideo(id: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/${id}`);
+  }
+  
   
   
   

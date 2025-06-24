@@ -169,6 +169,7 @@ import { VideoService } from '../services/video'; // ✅ new import
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { browserRefresh } from '../app';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 interface FlatCategoryNode {
   id: number;
@@ -192,7 +193,8 @@ interface FlatCategoryNode {
     MatTreeModule,
     MatCheckboxModule,
     Header,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatProgressBarModule
   ]
 })
 export class UploadComponent implements OnInit {
@@ -207,6 +209,8 @@ export class UploadComponent implements OnInit {
 
   activeUploadTypeAnother: 'main' | string | null = null; // shared active upload
   resumeUsed = false;                    // indicates if resume clicked under SPA navigation
+
+  progress: number = 0; // ✅ Local progress value fed by service
 
   // ✅ category tree logic
   selectedCategoryId: number | null = null;
@@ -248,6 +252,11 @@ export class UploadComponent implements OnInit {
       this.dataSource.data = tree;
     });
 
+    // ✅ Subscribe to progress
+    this.videoService.uploadProgress$.subscribe(p => {
+      this.progress = p;
+    });
+
     // this.videoService.getResumableUploads().subscribe(videos => {
     //   this.resumableUploads = videos;
     // });
@@ -266,6 +275,19 @@ export class UploadComponent implements OnInit {
         this.resumeUsed = !!this.activeUploadTypeAnother;
       }
     });
+
+    this.activeUploadTypeAnother = this.videoService.getActiveUpload();
+
+    // ✅ Check if this is a fresh load (not SPA nav)
+    if (!sessionStorage.getItem('pageActiveOnce')) {
+      console.warn('Fresh load or tab reopen detected. Clearing upload state.');
+      this.activeUploadTypeAnother = null;
+      this.videoService.setActiveUpload(null);
+      this.videoService.uploadProgress$.next(0);
+    }
+
+    // ✅ Mark this session as active
+    sessionStorage.setItem('pageActiveOnce', 'true');
   }
 
   onResumeClick(video: any): void {
@@ -425,6 +447,7 @@ export class UploadComponent implements OnInit {
                 this.activeUploadTypeAnother = null;
                 this.videoService.setActiveUpload(null);
                 // this.activeUploadType = null;
+                this.videoService.uploadProgress$.next(0);
               }
             });
   
@@ -434,6 +457,7 @@ export class UploadComponent implements OnInit {
             this.activeUploadTypeAnother = null;
             this.videoService.setActiveUpload(null); // ❗ Clear cross-tab state
             // this.activeUploadType = null;
+            this.videoService.uploadProgress$.next(0);
           }
         },
         error: () => {
@@ -441,6 +465,7 @@ export class UploadComponent implements OnInit {
           this.activeUploadTypeAnother = null;
           this.videoService.setActiveUpload(null); // ❗ Clear cross-tab state
           // this.activeUploadType = null;
+          this.videoService.uploadProgress$.next(0);
         }
       });
     });
@@ -516,8 +541,7 @@ export class UploadComponent implements OnInit {
   resumeUpload(video: any): void {
     // this.activeUploadType = video.id ?? video.uploadUrl;
     const url = video.uploadUrl;
-    this.activeUploadTypeAnother = url; // 💡 Use URL string consistently
-    this.videoService.setActiveUpload(url); // 🌟 Mark as active across tabs
+    
 
     const input = document.createElement('input');
     input.type = 'file';
@@ -531,7 +555,8 @@ export class UploadComponent implements OnInit {
         this.videoService.setActiveUpload(null); // ❗ Clear on cancel
         return;
       }
-  
+      this.activeUploadTypeAnother = url; // 💡 Use URL string consistently
+      this.videoService.setActiveUpload(url); // 🌟 Mark as active across tabs
       // ✅ Get backend-stored hash
       this.videoService.getVideoMetadataByUrl(video.uploadUrl).subscribe({
         next: async (metadata) => {
@@ -578,6 +603,7 @@ export class UploadComponent implements OnInit {
                     this.activeUploadTypeAnother = null;
                     this.videoService.setActiveUpload(null); // ❗ Clear on failure
                     // this.activeUploadType = null;
+                    this.videoService.uploadProgress$.next(0);
                   }
                 },
                 error: () => {
@@ -585,6 +611,7 @@ export class UploadComponent implements OnInit {
                   // this.activeUploadType = null;
                   this.activeUploadTypeAnother = null;
                   this.videoService.setActiveUpload(null); // ❗ Clear on failure
+                  this.videoService.uploadProgress$.next(0);
                 }
               });
             },
@@ -593,6 +620,7 @@ export class UploadComponent implements OnInit {
               // this.activeUploadType = null;
               this.activeUploadTypeAnother = null;
               this.videoService.setActiveUpload(null); // ❗ Clear on failure
+              this.videoService.uploadProgress$.next(0);
             }
           });
         },
@@ -601,6 +629,7 @@ export class UploadComponent implements OnInit {
           // this.activeUploadType = null;
           this.activeUploadTypeAnother = null;
           this.videoService.setActiveUpload(null); // ❗ Clear on failure
+          this.videoService.uploadProgress$.next(0);
         }
       });
     };
