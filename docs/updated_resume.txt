@@ -1,0 +1,152 @@
+sequenceDiagram
+    %% === FRONTEND ===
+    participant F as UploadComponent (Angular)
+    participant FVS as VideoService.ts (Angular Service)
+
+    %% === API ===
+    participant VC as VideoController (.NET API)
+
+    %% === SERVICE LAYER ===
+    participant IVS as IVideoService
+    participant VS as VideoService (Impl)
+
+    %% === REPOSITORIES ===
+    participant IVR as IVideoRepository
+    participant VR as VideoRepository
+
+    %% === DB + INFRA ===
+    participant DB as AppDbContext
+    participant BLOB as Azure Blob Storage
+    participant ISearchService as ISearchService
+    participant SearchService as SearchService
+    participant Elasticsearch as ElasticSearch
+
+    %% === FLOW ===
+    F->>FVS: getVideoMetadataByUrl(uploadUrl)
+    FVS->>VC: GET /api/video/metadata-by-url?uploadUrl=...
+    VC->>IVS: GetVideoMetadataByUrlAsync(uploadUrl, userId)
+    IVS->>VS: GetVideoMetadataByUrlAsync(uploadUrl, userId)
+    VS->>IVR: GetMetadataByUrlAsync(uploadUrl, userId)
+    IVR->>VR: GetMetadataByUrlAsync(uploadUrl, userId)
+    VR->>DB: SELECT Video (FileHash, FileSize)
+    DB-->>VR: metadata
+    VR-->>IVR: metadata
+    IVR-->>VS: metadata
+    VS-->>IVS: metadata
+    IVS-->>VC: metadata
+    VC-->>FVS: metadata
+    FVS-->>F: metadata
+
+     %% HASH COMPARISON
+    F->>FVS: calculateSHA256Stream(file)
+    loop
+        FVS->>FVS: incrementalhashing
+    end
+    FVS-->>F: fileHash
+    F->>F: Compare local fileHash with metadata.fileHash
+    alt Hash matches
+        Note right of F: Proceed with resume upload
+    else Hash mismatch
+        F-->>F: Abort resume, alert user, return
+    end
+
+
+
+    F->>FVS: getSasUrl(fileName)
+    FVS->>VC: GET /api/video/get-sas-url?fileName=...
+    VC->>IVS: GetSasUploadUrl(fileName)
+    IVS->>VS: GetSasUploadUrl(fileName)
+    VS->>BLOB: ToSasQueryParameters(credentials).ToString()
+    BLOB-->>VS: sasURL
+    VS-->>IVS: sasURL
+    IVS-->>VC: sasURL
+    VC-->>FVS: sasURL
+    FVS-->>F: sasURL
+
+    %% F->>FVS: uploadFileToBlobTwo(file, sasUrl, uploadUrl, onProgress, uploadedBlockCount)
+    %% loop for remaining chunks
+    %%     FVS->>BLOB: stageBlock
+    %%     BLOB-->>FVS: 200 OK
+    %%     FVS->>VC: POST /api/video/track-block
+    %%     VC->>IVS: IncrementBlockCountAsync(uploadUrl, userId, blockCount)
+    %%     IVS->>VS: IncrementBlockCountAsync(uploadUrl, userId, blockCount)
+    %%     VS->>IVR: GetByUploadUrlAsync(uploadUrl, userId)
+    %%     IVR->>VR: GetByUploadUrlAsync(uploadUrl, userId)
+    %%     VR->>DB: SELECT Video
+    %%     DB-->>VR: Video
+    %%     VR-->>IVR: Video
+    %%     IVR-->>VS: Video
+
+    %%     VS->>IVR: Update(video)
+    %%     IVR->>VR: Update
+    %%     VR->>DB: UPDATE Video.UploadedBlockCount + 1
+    %%     DB-->>VR: done
+    %%     VR-->>IVR: done
+    %%     IVR-->>VS: done
+
+    %%     VS->>IVR: SaveChangesAsync()
+    %%     IVR->>VR: SaveChangesAsync()
+    %%     VR->>DB: SaveChanges
+    %%     DB-->>VR: done
+    %%     VR-->>IVR: done
+    %%     IVR-->>VS: done
+
+    %%     VS-->>IVS: video
+    %%     IVS-->>VC: OK
+    %%     VC-->>FVS: OK
+    %% end
+
+    %% FVS->>BLOB: commitBlockList
+    %% BLOB-->>FVS: 200 OK
+    %% FVS-->>F: done
+    F->>FVS: uploadFileToBlobParallelResume(file, sasUrl, uploadUrl)
+    par max 4 parallel chunks
+        loop for each remaining chunk (not in localStorage)
+            FVS->>BLOB: stageBlock
+            BLOB-->>FVS: 200 OK
+            FVS->>LS: updateLocalUploadedBlocks(uploadUrl, blockIndex)
+            FVS->>F: emitProgress %
+        end
+    end
+    Note over FVS: Next batch starts after Promise.all resolves
+    FVS->>BLOB: commitBlockList
+    BLOB-->>FVS: 200 OK
+    FVS->>LS: clearLocalUploadedBlocks(uploadUrl)
+    FVS-->>F: done
+
+    %% Confirm upload
+    F->>FVS: confirmUpload(blobUrl)
+    FVS->>VC: POST /api/video/confirm-upload
+    VC->>IVS: ConfirmUploadAsync(blobUrl, userId)
+    IVS->>VS: ConfirmUploadAsync(blobUrl, userId)
+    VS->>IVR: GetByUploadUrlWithTagsAndCategoryAsync(blobUrl, userId)
+    IVR->>VR: GetByUploadUrlWithTagsAndCategoryAsync(blobUrl, userId)
+    VR->>DB: SELECT Video JOIN Tags + Category
+    DB-->>VR: Video + Tags + Category
+    VR-->>IVR: Video + Tags + Category
+    IVR-->>VS: Video + Tags + Category
+
+    VS->>IVR: Update(video)
+    IVR->>VR: Update
+    VR->>DB: UPDATE Video.IsUploaded = 1
+    DB-->>VR: done
+    VR-->>IVR: done
+    IVR-->>VS: done
+
+    VS->>IVR: SaveChangesAsync()
+    IVR->>VR: SaveChangesAsync()
+    VR->>DB: SaveChanges
+    DB-->>VR: done
+    VR-->>IVR: done
+    IVR-->>VS: done
+
+    VS->>ISearchService: IndexVideoAsync(video)
+    ISearchService->>SearchService: IndexVideoAsync(video)
+    SearchService->>Elasticsearch: IndexDocumentAsync(doc)
+    Elasticsearch-->>SearchService: success
+    SearchService-->>ISearchService: success
+    ISearchService-->>VS: success
+    VS-->>IVS: true
+    IVS-->>VC: Ok
+    VC-->>FVS: Ok
+    FVS-->>F: Ok

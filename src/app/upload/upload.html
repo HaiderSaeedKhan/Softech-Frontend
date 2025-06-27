@@ -210,8 +210,10 @@
   <div *ngIf="activeUploads.length > 0" class="active-uploads">
     <h3>Active Uploads</h3>
     <div *ngFor="let url of activeUploads">
-      <p>{{ url.split('/').pop() }}</p>
-      <mat-progress-bar mode="determinate" [value]="progressMap[url.split('?')[0]] || 0"></mat-progress-bar>
+      <!-- <p>{{ url.split('/').pop() }}</p>
+      <mat-progress-bar mode="determinate" [value]="progressMap[url.split('?')[0]] || 0"></mat-progress-bar> -->
+      <p>{{ cleanBlobName(url) }}</p>
+      <mat-progress-bar mode="determinate" [value]="progressMap[cleanBlobUrl(url)] || 0"></mat-progress-bar>
     </div>
   </div>
 

@@ -35,79 +35,113 @@ export class VideoService {
   //   localStorage.setItem('activeUploads', JSON.stringify(updated));
   // }
 
-  async uploadFileToBlob(file: File, sasUrl: string, onProgress: (p: number) => void) {
+  private updateLocalUploadedBlocks(uploadUrl: string, blockIndex: number): void {
+    const key = `uploadedBlocks_${uploadUrl}`;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!existing.includes(blockIndex)) {
+      existing.push(blockIndex);
+      localStorage.setItem(key, JSON.stringify(existing));
+    }
+  }
+
+  getLocalUploadedBlocks(uploadUrl: string): number[] {
+    const key = `uploadedBlocks_${uploadUrl}`;
+    return JSON.parse(localStorage.getItem(key) || '[]');
+  }
+
+  clearLocalUploadedBlocks(uploadUrl: string): void {
+    const key = `uploadedBlocks_${uploadUrl}`;
+    localStorage.removeItem(key);
+  }
+
+  // 🟣 PARALLEL UPLOAD WITH PRECISE TRACKING
+  async uploadFileToBlobParallel(file: File, sasUrl: string, onProgress: (p: number) => void) {
     const blockBlobClient = new BlockBlobClient(sasUrl);
     const blockSize = 1 * 1024 * 1024;
     const totalBlocks = Math.ceil(file.size / blockSize);
     const blockIds: string[] = [];
-    var uploadId = `${file.name}-${file.size}`;
-    let fullU: string = "";
-    for (let i = 0; i < totalBlocks; i++) {
+    const fullUrl = sasUrl.split('?')[0];
+
+    const uploadedMap = new Map<number, boolean>();
+    const promises = Array.from({ length: totalBlocks }, (_, i) => {
       const blockId = btoa(i.toString().padStart(6, '0'));
+      blockIds[i] = blockId;
+
       const start = i * blockSize;
       const end = Math.min(start + blockSize, file.size);
       const chunk = file.slice(start, end);
 
-      await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
-      blockIds.push(blockId);
-      console.log(sasUrl)
-      console.log(i+1)
-      const fullUrl = sasUrl.split('?')[0];
-      fullU = fullUrl
-      this.updateLocalBlockCount(fullUrl, i + 1);
-      onProgress(Math.round(((i + 1) / totalBlocks) * 100));
-      const progress = Math.round(((i + 1) / totalBlocks) * 100);
-      this.emitProgress(fullUrl, progress);
+      return blockBlobClient.stageBlock(blockId, chunk, chunk.size)
+        .then(() => {
+          uploadedMap.set(i, true);
+          this.updateLocalUploadedBlocks(fullUrl, i);  // 🟣 record block index locally
+
+          const uploaded = uploadedMap.size;
+          const progress = Math.round((uploaded / totalBlocks) * 100);
+          this.emitProgress(fullUrl, progress);
+          onProgress(progress);
+        });
+    });
+
+    const maxParallel = 4;
+    for (let i = 0; i < promises.length; i += maxParallel) {
+      const batch = promises.slice(i, i + maxParallel);
+      await Promise.all(batch);
     }
-    console.log(fullU);
+
     await blockBlobClient.commitBlockList(blockIds);
-    this.emitProgress(fullU, 0);
-    this.clearLocalBlockCount(fullU);
+    this.emitProgress(fullUrl, 0);
+    this.clearLocalUploadedBlocks(fullUrl);  // 🟣 clear after successful commit
   }
 
-  
-
-  async uploadFileToBlobTwo(
+  // 🟣 PARALLEL RESUME
+  async uploadFileToBlobParallelResume(
     file: File,
     sasUrl: string,
-    uploadUrl: string,
-    uploadedBlockCount: number
+    uploadUrl: string
   ) {
     const blockBlobClient = new BlockBlobClient(sasUrl);
-    const blockSize = 1 * 1024 * 1024; // 1MB
+    const blockSize = 1 * 1024 * 1024;
     const totalBlocks = Math.ceil(file.size / blockSize);
     const blockIds: string[] = [];
-  
-    // ✅ Always generate full block list
-    for (let i = 0; i < totalBlocks; i++) {
-      blockIds.push(btoa(i.toString().padStart(6, '0')));
-    }
-  
-    // ✅ Resume from uploadedBlockCount
-    for (let i = uploadedBlockCount; i < totalBlocks; i++) {
-      const blockId = blockIds[i];
+
+    const uploadedBlocks = this.getLocalUploadedBlocks(uploadUrl);
+
+    const uploadedMap = new Map<number, boolean>();
+    const promises = Array.from({ length: totalBlocks }, (_, i) => {
+      const blockId = btoa(i.toString().padStart(6, '0'));
+      blockIds[i] = blockId;
+
+      if (uploadedBlocks.includes(i)) {
+        uploadedMap.set(i, true);
+        return Promise.resolve(); // skip already uploaded
+      }
+
       const start = i * blockSize;
       const end = Math.min(start + blockSize, file.size);
       const chunk = file.slice(start, end);
-  
-      await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
-      this.updateLocalBlockCount(uploadUrl, i + 1);      
-      const progress = Math.round(((i + 1) / totalBlocks) * 100);
-      this.emitProgress(uploadUrl, progress);
+
+      return blockBlobClient.stageBlock(blockId, chunk, chunk.size)
+        .then(() => {
+          uploadedMap.set(i, true);
+          this.updateLocalUploadedBlocks(uploadUrl, i);
+
+          const uploaded = uploadedMap.size;
+          const progress = Math.round((uploaded / totalBlocks) * 100);
+          this.emitProgress(uploadUrl, progress);
+        });
+    });
+
+    const maxParallel = 4;
+    for (let i = 0; i < promises.length; i += maxParallel) {
+      const batch = promises.slice(i, i + maxParallel);
+      await Promise.all(batch);
     }
-  
-    // ✅ Commit full block list (not just the ones uploaded in this session)
+
     await blockBlobClient.commitBlockList(blockIds);
     this.emitProgress(uploadUrl, 0);
-    this.clearLocalBlockCount(uploadUrl);
+    this.clearLocalUploadedBlocks(uploadUrl);
   }
-
-  // async calculateSHA256(file: File): Promise<string> {
-  //   const buffer = await file.arrayBuffer();
-  //   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  //   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  // }
 
   async calculateSHA256Stream(file: File): Promise<string> {
     const chunkSize = 1 * 1024 * 1024; // 1 MB
@@ -169,22 +203,22 @@ export class VideoService {
     return this.http.post(`${this.baseUrl}/confirm-upload`, { blobUrl }); // ✅ wrap it
   }
   
-  trackBlock(uploadUrl: string, blockCount: number) {
-    return this.http.post(`${this.baseUrl}/track-block`, {
-      uploadUrl,
-      blockCount
-    });
-  }
+  // trackBlock(uploadUrl: string, blockCount: number) {
+  //   return this.http.post(`${this.baseUrl}/track-block`, {
+  //     uploadUrl,
+  //     blockCount
+  //   });
+  // }
   
   getResumableUploads() {
     return this.http.get<any[]>(`${this.baseUrl}/resumable`);
   }
 
-  getUploadedBlockCount(uploadUrl: string) {
-    return this.http.get<{ uploadedBlockCount: number }>(
-      `${this.baseUrl}/block-count?uploadUrl=${encodeURIComponent(uploadUrl)}`
-    );
-  }
+  // getUploadedBlockCount(uploadUrl: string) {
+  //   return this.http.get<{ uploadedBlockCount: number }>(
+  //     `${this.baseUrl}/block-count?uploadUrl=${encodeURIComponent(uploadUrl)}`
+  //   );
+  // }
 
   getVideoMetadataByUrl(uploadUrl: string): Observable<{ fileHash: string; fileSize: number; uploadUrl: string }> {
     return this.http.get<{ fileHash: string; fileSize: number; uploadUrl: string }>(
@@ -206,6 +240,142 @@ export class VideoService {
   private clearLocalBlockCount(uploadUrl: string): void {
     const key = `blockCount_${uploadUrl}`;
     localStorage.removeItem(key);
+  }
+  
+
+  // async uploadFileToBlobParallelTwo(file: File, sasUrl: string, onProgress: (p: number) => void) {
+  //   const blockBlobClient = new BlockBlobClient(sasUrl);
+  //   const blockSize = 1 * 1024 * 1024;
+  //   const totalBlocks = Math.ceil(file.size / blockSize);
+  //   const blockIds: string[] = [];
+  //   const fullUrl = sasUrl.split('?')[0];
+
+  //   const uploadedMap = new Map<number, boolean>();
+  //   const promises = Array.from({ length: totalBlocks }, (_, i) => {
+  //     const blockId = btoa(i.toString().padStart(6, '0'));
+  //     blockIds[i] = blockId;
+
+  //     const start = i * blockSize;
+  //     const end = Math.min(start + blockSize, file.size);
+  //     const chunk = file.slice(start, end);
+
+  //     return this.enqueueGlobal(() => 
+  //       blockBlobClient.stageBlock(blockId, chunk, chunk.size).then(() => {
+  //         uploadedMap.set(i, true);
+  //         this.updateLocalUploadedBlocks(fullUrl, i);
+  //         const uploaded = uploadedMap.size;
+  //         const progress = Math.round((uploaded / totalBlocks) * 100);
+  //         this.emitProgress(fullUrl, progress);
+  //         onProgress(progress);
+  //       })
+  //     );
+  //   });
+
+  //   await Promise.all(promises);
+
+
+  //   await blockBlobClient.commitBlockList(blockIds);
+  //   this.emitProgress(fullUrl, 0);
+  //   this.clearLocalUploadedBlocks(fullUrl);
+  // }
+
+  async uploadFileToBlobParallelTwo(file: File, sasUrl: string, onProgress: (p: number) => void) {
+    const blockBlobClient = new BlockBlobClient(sasUrl);
+    const blockSize = 1 * 1024 * 1024;
+    const totalBlocks = Math.ceil(file.size / blockSize);
+    const blockIds: string[] = [];
+    const fullUrl = sasUrl.split('?')[0];
+  
+    const uploadedMap = new Map<number, boolean>();
+  
+    const tasks = Array.from({ length: totalBlocks }, (_, i) => {
+      const blockId = btoa(i.toString().padStart(6, '0'));
+      blockIds[i] = blockId;
+  
+      const start = i * blockSize;
+      const end = Math.min(start + blockSize, file.size);
+      const chunk = file.slice(start, end);
+  
+      return async () => {
+        await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
+        uploadedMap.set(i, true);
+        this.updateLocalUploadedBlocks(fullUrl, i);
+        const uploaded = uploadedMap.size;
+        const progress = Math.round((uploaded / totalBlocks) * 100);
+        this.emitProgress(fullUrl, progress);
+        onProgress(progress);
+      };
+    });
+  
+    const maxParallel = 4;
+    let i = 0;
+    const runners: Promise<void>[] = [];
+  
+    while (i < tasks.length) {
+      const batch = tasks.slice(i, i + maxParallel);
+      runners.push(...batch.map(fn => fn()));
+      await Promise.all(runners.splice(0, maxParallel));
+      i += maxParallel;
+    }
+  
+    await blockBlobClient.commitBlockList(blockIds);
+    this.emitProgress(fullUrl, 0);
+    this.clearLocalUploadedBlocks(fullUrl);
+  }
+  
+
+  async uploadFileToBlobParallelResumeTwo(
+    file: File,
+    sasUrl: string,
+    uploadUrl: string,
+    onProgress: (p: number) => void
+  ) {
+    const blockBlobClient = new BlockBlobClient(sasUrl);
+    const blockSize = 1 * 1024 * 1024;
+    const totalBlocks = Math.ceil(file.size / blockSize);
+    const blockIds: string[] = [];
+  
+    const uploadedBlocks = this.getLocalUploadedBlocks(uploadUrl);
+    const uploadedMap = new Map<number, boolean>();
+  
+    const tasks = Array.from({ length: totalBlocks }, (_, i) => {
+      const blockId = btoa(i.toString().padStart(6, '0'));
+      blockIds[i] = blockId;
+  
+      if (uploadedBlocks.includes(i)) {
+        uploadedMap.set(i, true);
+        return async () => {}; // skip already uploaded
+      }
+  
+      const start = i * blockSize;
+      const end = Math.min(start + blockSize, file.size);
+      const chunk = file.slice(start, end);
+  
+      return async () => {
+        await blockBlobClient.stageBlock(blockId, chunk, chunk.size);
+        uploadedMap.set(i, true);
+        this.updateLocalUploadedBlocks(uploadUrl, i);
+        const uploaded = uploadedMap.size;
+        const progress = Math.round((uploaded / totalBlocks) * 100);
+        this.emitProgress(uploadUrl, progress);
+        onProgress(progress);
+      };
+    });
+  
+    const maxParallel = 4;
+    let i = 0;
+    const runners: Promise<void>[] = [];
+  
+    while (i < tasks.length) {
+      const batch = tasks.slice(i, i + maxParallel);
+      runners.push(...batch.map(fn => fn()));
+      await Promise.all(runners.splice(0, maxParallel));
+      i += maxParallel;
+    }
+  
+    await blockBlobClient.commitBlockList(blockIds);
+    this.emitProgress(uploadUrl, 0);
+    this.clearLocalUploadedBlocks(uploadUrl);
   }
   
 

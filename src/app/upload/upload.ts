@@ -178,130 +178,129 @@ export class UploadComponent implements OnInit {
     }
   }
 
-  onSubmit(): void {
-    const { title, description, manualTags } = this.form.value;
-    const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
+  // onSubmit(): void {
+  //   const { title, description, manualTags } = this.form.value;
+  //   const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
   
-    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
-      alert('All fields must be filled.');
-      return;
-    }
+  //   if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
+  //     alert('All fields must be filled.');
+  //     return;
+  //   }
   
-    const fileName = `${Date.now()}_${this.selectedFile.name}`;
+  //   const fileName = `${Date.now()}_${this.selectedFile.name}`;
   
-    this.videoService.calculateSHA256Stream(this.selectedFile!).then(hash => {
-      const metadata = {
-        title,
-        description,
-        categoryId: this.selectedCategoryId!,
-        tags,
-        uploadUrl: fileName,
-        fileSize: this.selectedFile!.size,
-        fileHash: hash // ✅ Send hash to backend
-      };
+  //   this.videoService.calculateSHA256Stream(this.selectedFile!).then(hash => {
+  //     const metadata = {
+  //       title,
+  //       description,
+  //       categoryId: this.selectedCategoryId!,
+  //       tags,
+  //       uploadUrl: fileName,
+  //       fileSize: this.selectedFile!.size,
+  //       fileHash: hash // ✅ Send hash to backend
+  //     };
   
-      this.videoService.saveMetadata(metadata).subscribe({
-        next: async ({ uploadUrl }) => {
-          try {
-            this.addActiveUpload(uploadUrl);
-            await this.videoService.uploadFileToBlob(this.selectedFile!, uploadUrl, (p) => {
-              console.log(`Progress: ${p}%`);
-            });
+  //     this.videoService.saveMetadata(metadata).subscribe({
+  //       next: async ({ uploadUrl }) => {
+  //         try {
+  //           this.addActiveUpload(uploadUrl);
+  //           await this.videoService.uploadFileToBlobParallel(this.selectedFile!, uploadUrl, (p) => {
+  //             console.log(`Progress: ${p}%`);
+  //           });
   
-            const blobUrl = uploadUrl.split('?')[0];
-            this.videoService.confirmUpload(blobUrl).subscribe({
-              next: () => {
-                this.removeActiveUpload(uploadUrl);
-                this.refreshResumables();
-                // window.location.reload();
-              },
-              error: () => {
-                alert('Upload succeeded but confirmation failed.');
-                this.removeActiveUpload(uploadUrl);
-              }
-            });
+  //           const blobUrl = uploadUrl.split('?')[0];
+  //           this.videoService.confirmUpload(blobUrl).subscribe({
+  //             next: () => {
+  //               this.removeActiveUpload(uploadUrl);
+  //               this.refreshResumables();
+  //               // window.location.reload();
+  //             },
+  //             error: () => {
+  //               alert('Upload succeeded but confirmation failed.');
+  //               this.removeActiveUpload(uploadUrl);
+  //             }
+  //           });
   
-          } catch (err) {
-            console.error('Upload error:', err);
-            alert('Video upload failed.');
-            this.removeActiveUpload(uploadUrl);
-          }
-        },
-        error: () => {
-          alert('Saving metadata failed.');
-        }
-      });
-    });
-  }
+  //         } catch (err) {
+  //           console.error('Upload error:', err);
+  //           alert('Video upload failed.');
+  //           this.removeActiveUpload(uploadUrl);
+  //         }
+  //       },
+  //       error: () => {
+  //         alert('Saving metadata failed.');
+  //       }
+  //     });
+  //   });
+  // }
 
-  resumeUpload(video: any): void {
-    const url = video.uploadUrl;
+  // resumeUpload(video: any): void {
+  //   const url = video.uploadUrl;
     
 
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
+  //   const input = document.createElement('input');
+  //   input.type = 'file';
+  //   input.accept = 'video/*';
   
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) {
-        return;
-      }
+  //   input.onchange = async () => {
+  //     const file = input.files?.[0];
+  //     if (!file) {
+  //       return;
+  //     }
       
-      const metadata = await this.videoService.getVideoMetadataByUrl(video.uploadUrl).toPromise();
-      const fileHash = await this.videoService.calculateSHA256Stream(file);
+  //     const metadata = await this.videoService.getVideoMetadataByUrl(video.uploadUrl).toPromise();
+  //     const fileHash = await this.videoService.calculateSHA256Stream(file);
 
-      if (!metadata) {
-        alert('Failed to retrieve metadata. Cannot resume.');
-        return;
-      }
-      if (metadata.fileHash !== fileHash) {
-        alert('Hash mismatch. Cannot resume.');
-        return;
-      }
+  //     if (!metadata) {
+  //       alert('Failed to retrieve metadata. Cannot resume.');
+  //       return;
+  //     }
+  //     if (metadata.fileHash !== fileHash) {
+  //       alert('Hash mismatch. Cannot resume.');
+  //       return;
+  //     }
 
 
-      this.addActiveUpload(video.uploadUrl);
+  //     this.addActiveUpload(video.uploadUrl);
 
-      // ✅ Get local block count only
-      const uploadedBlockCount = this.videoService.getLocalBlockCount(video.uploadUrl);
-      if (uploadedBlockCount === 0) {
-        alert('No local progress found. Cannot resume.');
-        this.removeActiveUpload(video.uploadUrl);
-        return;
-      }
+  //     // ✅ Get local block count only
+  //     // const uploadedBlockCount = this.videoService.getLocalBlockCount(video.uploadUrl);
+  //     // if (uploadedBlockCount === 0) {
+  //     //   alert('No local progress found. Cannot resume.');
+  //     //   this.removeActiveUpload(video.uploadUrl);
+  //     //   return;
+  //     // }
   
-              const fileNameOnly = video.uploadUrl.split('/').pop()!;
-              this.videoService.getSasUrl(fileNameOnly).subscribe({
-                next: async ({ uploadUrl }) => {
-                  try {
-                    await this.videoService.uploadFileToBlobTwo(
-                      file,
-                      uploadUrl,
-                      video.uploadUrl,
-                      uploadedBlockCount
-                    );
+  //             const fileNameOnly = video.uploadUrl.split('/').pop()!;
+  //             this.videoService.getSasUrl(fileNameOnly).subscribe({
+  //               next: async ({ uploadUrl }) => {
+  //                 try {
+  //                   await this.videoService.uploadFileToBlobParallelResume(
+  //                     file,
+  //                     uploadUrl,
+  //                     video.uploadUrl
+  //                   );
   
-                    this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
-                      this.removeActiveUpload(video.uploadUrl);
-                      this.refreshResumables();
-                      // window.location.reload();
-                    });
-                  } catch (err) {
-                    console.error('Resume failed', err);
-                    console.error('Resume failed', err);
-                    alert('Resuming upload failed.');
-                    this.removeActiveUpload(video.uploadUrl);
-                  }
-                },
-                error: () => {
-                  alert('Failed to get upload URL.');
-                }
-              });
-    };
+  //                   this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
+  //                     this.removeActiveUpload(video.uploadUrl);
+  //                     this.refreshResumables();
+  //                     // window.location.reload();
+  //                   });
+  //                 } catch (err) {
+  //                   console.error('Resume failed', err);
+  //                   console.error('Resume failed', err);
+  //                   alert('Resuming upload failed.');
+  //                   this.removeActiveUpload(video.uploadUrl);
+  //                 }
+  //               },
+  //               error: () => {
+  //                 alert('Failed to get upload URL.');
+  //               }
+  //             });
+  //   };
   
-    input.click();
-  }
+  //   input.click();
+  // }
   
   getOverallProgress(): number {
     const values = Object.values(this.progressMap);
@@ -348,16 +347,148 @@ export class UploadComponent implements OnInit {
     });
   }
 
+  // getLocalUploadedMB(uploadUrl: string, fileSize: number): number {
+  //   const blockCount = this.videoService.getLocalBlockCount(uploadUrl);
+  //   if (blockCount === 0) {
+  //     return 0;
+  //   }
+  //   const blockSize = 1 * 1024 * 1024; // 1 MB
+  //   const uploadedBytes = Math.min(blockCount * blockSize, fileSize);
+  //   return Math.round(uploadedBytes / (1024 * 1024)); // Convert to MB
+  // }
+
   getLocalUploadedMB(uploadUrl: string, fileSize: number): number {
-    const blockCount = this.videoService.getLocalBlockCount(uploadUrl);
-    if (blockCount === 0) {
+    const uploadedBlocks = this.videoService.getLocalUploadedBlocks(uploadUrl);
+    if (uploadedBlocks.length === 0) {
       return 0;
     }
+  
     const blockSize = 1 * 1024 * 1024; // 1 MB
-    const uploadedBytes = Math.min(blockCount * blockSize, fileSize);
+    const uploadedBytes = Math.min(uploadedBlocks.length * blockSize, fileSize);
     return Math.round(uploadedBytes / (1024 * 1024)); // Convert to MB
   }
+
+  cleanBlobUrl(url: string): string {
+    return url.split('?')[0];
+  }
   
+  cleanBlobName(url: string): string {
+    return this.cleanBlobUrl(url).split('/').pop() || url;
+  }
+
+
+
+
+
+  onSubmit(): void {
+    const { title, description, manualTags } = this.form.value;
+    const tags: string[] = (manualTags as string[]).filter(t => t?.trim().length > 0);
+  
+    if (!title || !description || !this.selectedFile || !this.selectedCategoryId || tags.length === 0) {
+      alert('All fields must be filled.');
+      return;
+    }
+  
+    const file = this.selectedFile;
+    const fileName = `${Date.now()}_${file.name}`;
+  
+    this.videoService.calculateSHA256Stream(file).then(hash => {
+      const metadata = {
+        title,
+        description,
+        categoryId: this.selectedCategoryId!,
+        tags,
+        uploadUrl: fileName,
+        fileSize: file.size,
+        fileHash: hash
+      };
+  
+      // ✅ Save metadata + fire off upload + confirm without blocking future calls
+      this.videoService.saveMetadata(metadata).subscribe({
+        next: ({ uploadUrl }) => {
+          this.addActiveUpload(uploadUrl);
+  
+          // Kick off upload without blocking (no await here — let it complete when done)
+          this.videoService.uploadFileToBlobParallelTwo(file, uploadUrl, (p) => {
+            console.log(`[${uploadUrl}] Progress: ${p}%`);
+          }).then(() => {
+            const blobUrl = uploadUrl.split('?')[0];
+            this.videoService.confirmUpload(blobUrl).subscribe({
+              next: () => {
+                console.log(`[${uploadUrl}] ConfirmUpload success`);
+                this.removeActiveUpload(uploadUrl);
+                this.refreshResumables();
+              },
+              error: () => {
+                console.error(`[${uploadUrl}] ConfirmUpload failed`);
+                alert('Upload succeeded but confirmation failed.');
+                this.removeActiveUpload(uploadUrl);
+              }
+            });
+          }).catch(err => {
+            console.error(`[${uploadUrl}] Upload error`, err);
+            alert('Video upload failed.');
+            this.removeActiveUpload(uploadUrl);
+          });
+  
+        },
+        error: () => {
+          alert('Saving metadata failed.');
+        }
+      });
+    });
+  }
+
+  resumeUpload(video: any): void {
+    const url = video.uploadUrl;
+  
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+  
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+  
+      const metadata = await this.videoService.getVideoMetadataByUrl(video.uploadUrl).toPromise();
+      const fileHash = await this.videoService.calculateSHA256Stream(file);
+  
+      if (!metadata) {
+        alert('Failed to retrieve metadata. Cannot resume.');
+        return;
+      }
+  
+      if (metadata.fileHash !== fileHash) {
+        alert('Hash mismatch. Cannot resume.');
+        return;
+      }
+  
+      this.addActiveUpload(video.uploadUrl);
+  
+      const fileNameOnly = video.uploadUrl.split('/').pop()!;
+      this.videoService.getSasUrl(fileNameOnly).subscribe({
+        next: async ({ uploadUrl }) => {
+          this.videoService.uploadFileToBlobParallelResumeTwo(file, uploadUrl, video.uploadUrl, (progress) => {
+            console.log(`[RESUME ${uploadUrl}] Progress: ${progress}%`);
+          }).then(() => {
+            this.videoService.confirmUpload(video.uploadUrl).subscribe(() => {
+              this.removeActiveUpload(video.uploadUrl);
+              this.refreshResumables();
+            });
+          }).catch(err => {
+            console.error(`[RESUME ${uploadUrl}] Resume failed`, err);
+            alert('Resuming upload failed.');
+            this.removeActiveUpload(video.uploadUrl);
+          });
+        },
+        error: () => {
+          alert('Failed to get upload URL.');
+        }
+      });
+    };
+  
+    input.click();
+  }
   
   
   
